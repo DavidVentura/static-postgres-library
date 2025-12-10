@@ -1,0 +1,14 @@
+diff --git a/src/include/commands/async.h b/src/include/commands/async.h
+index aaec7314c10..bfa747da2de 100644
+--- a/src/include/commands/async.h
++++ b/src/include/commands/async.h
+@@ -19,6 +19,9 @@ extern PGDLLIMPORT bool Trace_notify;
+ extern PGDLLIMPORT int max_notify_queue_pages;
+ extern PGDLLIMPORT volatile sig_atomic_t notifyInterruptPending;
+ 
++/* Hook for embedded mode to capture notifications */
++extern PGDLLIMPORT void (*pg_notify_hook)(const char *channel, const char *payload, int32 srcPid);
++
+ extern Size AsyncShmemSize(void);
+ extern void AsyncShmemInit(void);
+ 

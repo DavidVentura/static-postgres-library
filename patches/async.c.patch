@@ -1,0 +1,28 @@
+diff --git a/src/backend/commands/async.c b/src/backend/commands/async.c
+index eb86402cae4..a5fb0256ab8 100644
+--- a/src/backend/commands/async.c
++++ b/src/backend/commands/async.c
+@@ -427,6 +427,9 @@ bool		Trace_notify = false;
+ /* For 8 KB pages this gives 8 GB of disk space */
+ int			max_notify_queue_pages = 1048576;
+ 
++/* Hook for embedded mode to capture notifications */
++void (*pg_notify_hook)(const char *channel, const char *payload, int32 srcPid) = NULL;
++
+ /* local function prototypes */
+ static inline int64 asyncQueuePageDiff(int64 p, int64 q);
+ static inline bool asyncQueuePagePrecedes(int64 p, int64 q);
+@@ -2343,6 +2346,13 @@ ProcessIncomingNotify(bool flush)
+ void
+ NotifyMyFrontEnd(const char *channel, const char *payload, int32 srcPid)
+ {
++	/* Call hook if registered (for embedded mode) */
++	if (pg_notify_hook)
++	{
++		pg_notify_hook(channel, payload, srcPid);
++		return;
++	}
++
+ 	if (whereToSendOutput == DestRemote)
+ 	{
+ 		StringInfoData buf;

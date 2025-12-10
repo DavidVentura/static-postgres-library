@@ -1,0 +1,17 @@
+diff --git a/src/backend/Makefile b/src/backend/Makefile
+index 7344c8c7f5c..67136709856 100644
+--- a/src/backend/Makefile
++++ b/src/backend/Makefile
+@@ -70,6 +70,12 @@ postgres: $(OBJS)
+ endif
+ endif
+ 
++# Export the list of object and library files for external use
++backend-libs.txt: $(filter-out main/objfiles.txt,$(SUBDIROBJS)) $(top_builddir)/src/common/libpgcommon_srv.a $(top_builddir)/src/port/libpgport_srv.a
++	@cat $(filter-out main/objfiles.txt,$(SUBDIROBJS)) | tr ' ' '\n' | sed 's|^src/backend/||' > $@
++	@echo "$(top_builddir)/src/common/libpgcommon_srv.a" >> $@
++	@echo "$(top_builddir)/src/port/libpgport_srv.a" >> $@
++
+ ifeq ($(PORTNAME), cygwin)
+ 
+ postgres: $(OBJS)

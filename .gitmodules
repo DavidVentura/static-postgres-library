@@ -1,0 +1,5 @@
+[submodule "vendor/pg18"]
+	path = vendor/pg18
+	url = https://git.postgresql.org/git/postgresql.git
+	branch = REL_18_STABLE
+	shallow = true
