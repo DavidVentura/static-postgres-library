@@ -1,0 +1,21 @@
+diff --git a/src/backend/utils/init/miscinit.c b/src/backend/utils/init/miscinit.c
+index df182577a19..cade5868a67 100644
+--- a/src/backend/utils/init/miscinit.c
++++ b/src/backend/utils/init/miscinit.c
+@@ -1950,3 +1950,16 @@ pg_bindtextdomain(const char *domain)
+ 	}
+ #endif
+ }
++
++/*
++ * ResetUserIdState - Reset user ID static state for embedded PostgreSQL reopen
++ */
++void
++ResetUserIdState(void)
++{
++	AuthenticatedUserId = InvalidOid;
++	SessionUserId = InvalidOid;
++	OuterUserId = InvalidOid;
++	CurrentUserId = InvalidOid;
++	SessionUserIsSuperuser = false;
++}

@@ -1,0 +1,17 @@
+diff --git a/src/backend/utils/mmgr/portalmem.c b/src/backend/utils/mmgr/portalmem.c
+index 0be1c2b0fff..6083440c91d 100644
+--- a/src/backend/utils/mmgr/portalmem.c
++++ b/src/backend/utils/mmgr/portalmem.c
+@@ -1291,3 +1291,12 @@ ForgetPortalSnapshots(void)
+ 		elog(ERROR, "portal snapshots (%d) did not account for all active snapshots (%d)",
+ 			 numPortalSnaps, numActiveSnaps);
+ }
++
++/*
++ * ResetPortalState - Reset portal memory static state for embedded PostgreSQL reopen
++ */
++void
++ResetPortalState(void)
++{
++	TopPortalContext = NULL;
++}

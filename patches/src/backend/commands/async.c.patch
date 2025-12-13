@@ -1,5 +1,5 @@
 diff --git a/src/backend/commands/async.c b/src/backend/commands/async.c
-index eb86402cae4..a5fb0256ab8 100644
+index e1cf659485a..abd537633d8 100644
 --- a/src/backend/commands/async.c
 +++ b/src/backend/commands/async.c
 @@ -427,6 +427,9 @@ bool		Trace_notify = false;
@@ -12,7 +12,7 @@ index eb86402cae4..a5fb0256ab8 100644
  /* local function prototypes */
  static inline int64 asyncQueuePageDiff(int64 p, int64 q);
  static inline bool asyncQueuePagePrecedes(int64 p, int64 q);
-@@ -2343,6 +2346,13 @@ ProcessIncomingNotify(bool flush)
+@@ -2347,6 +2350,13 @@ ProcessIncomingNotify(bool flush)
  void
  NotifyMyFrontEnd(const char *channel, const char *payload, int32 srcPid)
  {

@@ -1,0 +1,22 @@
+diff --git a/src/backend/storage/smgr/smgr.c b/src/backend/storage/smgr/smgr.c
+index bce37a36d51..e59a76a40dc 100644
+--- a/src/backend/storage/smgr/smgr.c
++++ b/src/backend/storage/smgr/smgr.c
+@@ -1116,3 +1116,17 @@ smgr_aio_describe_identity(const PgAioTargetData *sd)
+ 
+ 	return desc;
+ }
++
++/*
++ * ResetSmgrState - Reset storage manager static state for embedded PostgreSQL reopen
++ */
++void
++ResetSmgrState(void)
++{
++	/*
++	 * Reset the SMgrRelation hash table to NULL.
++	 * The hash table itself was freed during shmem_exit(), but the pointer
++	 * wasn't cleared, so subsequent initialization would try to use it.
++	 */
++	SMgrRelationHash = NULL;
++}

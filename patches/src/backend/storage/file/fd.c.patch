@@ -1,0 +1,28 @@
+diff --git a/src/backend/storage/file/fd.c b/src/backend/storage/file/fd.c
+index a4ec7959f31..a71ab16fca9 100644
+--- a/src/backend/storage/file/fd.c
++++ b/src/backend/storage/file/fd.c
+@@ -4116,3 +4116,23 @@ ResOwnerPrintFile(Datum res)
+ {
+ 	return psprintf("File %d", DatumGetInt32(res));
+ }
++
++/*
++ * ResetFileDescriptorState - Reset file descriptor static state for embedded PostgreSQL reopen
++ */
++void
++ResetFileDescriptorState(void)
++{
++	/*
++	 * Reset file descriptor state that persists after shmem_exit().
++	 * VfdCache must be NULL so that subsequent initialization doesn't
++	 * try to access freed memory.
++	 */
++	VfdCache = NULL;
++	SizeVfdCache = 0;
++	nfile = 0;
++	numAllocatedDescs = 0;
++	maxAllocatedDescs = 0;
++	allocatedDescs = NULL;
++	numExternalFDs = 0;
++}

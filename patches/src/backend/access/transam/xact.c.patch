@@ -1,0 +1,21 @@
+diff --git a/src/backend/access/transam/xact.c b/src/backend/access/transam/xact.c
+index b885513f765..6da6198d273 100644
+--- a/src/backend/access/transam/xact.c
++++ b/src/backend/access/transam/xact.c
+@@ -6444,3 +6444,16 @@ xact_redo(XLogReaderState *record)
+ 	else
+ 		elog(PANIC, "xact_redo: unknown op code %u", info);
+ }
++
++/*
++ * ResetTransactionState - Reset transaction static state for embedded PostgreSQL reopen
++ */
++void
++ResetTransactionState(void)
++{
++	TransactionAbortContext = NULL;
++	memset(&TopTransactionStateData, 0, sizeof(TopTransactionStateData));
++	TopTransactionStateData.state = TRANS_DEFAULT;
++	TopTransactionStateData.blockState = TBLOCK_DEFAULT;
++	CurrentTransactionState = &TopTransactionStateData;
++}

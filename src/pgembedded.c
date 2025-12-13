@@ -45,6 +45,8 @@
 
 /* Notification queue for embedded mode */
 
+/* Error message buffer shared across the API */
+char pg_error_msg[1024] = {0};
 
 void InitStandaloneProcess_(const char *argv0);
 

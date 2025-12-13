@@ -1,0 +1,17 @@
+diff --git a/src/backend/storage/smgr/md.c b/src/backend/storage/smgr/md.c
+index 2ccb0faceb5..4f73d711d00 100644
+--- a/src/backend/storage/smgr/md.c
++++ b/src/backend/storage/smgr/md.c
+@@ -2065,3 +2065,12 @@ md_readv_report(PgAioResult result, const PgAioTargetData *td, int elevel)
+ 					   td->smgr.nblocks * (size_t) BLCKSZ));
+ 	}
+ }
++
++/*
++ * ResetMdState - Reset MD storage manager static state for embedded PostgreSQL reopen
++ */
++void
++ResetMdState(void)
++{
++	MdCxt = NULL;
++}

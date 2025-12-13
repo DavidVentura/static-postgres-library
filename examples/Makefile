@@ -1,23 +1,20 @@
-# Makefile for building PostgreSQL embedded examples
-
-# Configuration
 CC = musl-gcc
-CFLAGS = -static -I"../src" -I"../vendor/pg18/src/include" -O2 -g
+CFLAGS = -static -I"../src" -I"../vendor/pg18/src/include" -O0 -ggdb
 LDFLAGS = -Wl,--gc-sections
 LIBPOSTGRES = ../src/libpostgres.a
 
-# Targets
-EXAMPLES = example initdb
+EXAMPLES = example initdb reopen
 
 .PHONY: all clean
 
 all: $(EXAMPLES)
 
-# Build example binary
+reopen: reopen.c $(LIBPOSTGRES)
+	$(CC) $(CFLAGS) $< $(LIBPOSTGRES) $(LDFLAGS) -o $@
+
 example: example.c $(LIBPOSTGRES)
 	$(CC) $(CFLAGS) $< $(LIBPOSTGRES) $(LDFLAGS) -o $@
 
-# Build initdb binary
 initdb: initdb.c $(LIBPOSTGRES)
 	$(CC) $(CFLAGS) $< $(LIBPOSTGRES) $(LDFLAGS) -o $@
 

@@ -1,0 +1,36 @@
+diff --git a/src/backend/utils/cache/relcache.c b/src/backend/utils/cache/relcache.c
+index 559ba9cdb2c..878f8a2b6f2 100644
+--- a/src/backend/utils/cache/relcache.c
++++ b/src/backend/utils/cache/relcache.c
+@@ -6993,3 +6993,31 @@ ResOwnerReleaseRelation(Datum res)
+ 
+ 	RelationCloseCleanup((Relation) res);
+ }
++
++/*
++ * ResetRelCacheState - Reset relcache static state for embedded PostgreSQL reopen
++ */
++void
++ResetRelCacheState(void)
++{
++	/*
++	 * Reset relation cache hash tables to NULL.
++	 * These hash tables were freed during shmem_exit(), but the pointers
++	 * weren't cleared, so subsequent initialization would try to use them.
++	 */
++	RelationIdCache = NULL;
++	OpClassCache = NULL;
++
++	/*
++	 * Reset other relcache state variables
++	 */
++	relcacheInvalsReceived = 0L;
++	in_progress_list = NULL;
++	in_progress_list_len = 0;
++	in_progress_list_maxlen = 0;
++	eoxact_list_len = 0;
++	eoxact_list_overflowed = false;
++	NextEOXactTupleDescNum = 0;
++	EOXactTupleDescArrayLen = 0;
++	EOXactTupleDescArray = NULL;
++}

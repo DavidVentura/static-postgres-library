@@ -1,0 +1,17 @@
+diff --git a/src/backend/catalog/namespace.c b/src/backend/catalog/namespace.c
+index dd5d241dfe2..76e27437f66 100644
+--- a/src/backend/catalog/namespace.c
++++ b/src/backend/catalog/namespace.c
+@@ -5088,3 +5088,12 @@ pg_is_other_temp_schema(PG_FUNCTION_ARGS)
+ 
+ 	PG_RETURN_BOOL(isOtherTempNamespace(oid));
+ }
++
++/*
++ * ResetNamespaceState - Reset namespace cache static state for embedded PostgreSQL reopen
++ */
++void
++ResetNamespaceState(void)
++{
++	SearchPathCacheContext = NULL;
++}

@@ -1,0 +1,19 @@
+diff --git a/src/backend/utils/cache/syscache.c b/src/backend/utils/cache/syscache.c
+index f944453a1d8..c90f353a5a8 100644
+--- a/src/backend/utils/cache/syscache.c
++++ b/src/backend/utils/cache/syscache.c
+@@ -799,3 +799,14 @@ oid_compare(const void *a, const void *b)
+ 
+ 	return pg_cmp_u32(oa, ob);
+ }
++
++/*
++ * ResetCatalogCacheState - Reset catalog cache static state for embedded PostgreSQL reopen
++ */
++void
++ResetCatalogCacheState(void)
++{
++	CacheInitialized = false;
++	SysCacheRelationOidSize = 0;
++	SysCacheSupportingRelOidSize = 0;
++}

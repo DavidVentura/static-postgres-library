@@ -1,0 +1,23 @@
+diff --git a/src/backend/storage/ipc/ipc.c b/src/backend/storage/ipc/ipc.c
+index 567739b5be9..861a8955359 100644
+--- a/src/backend/storage/ipc/ipc.c
++++ b/src/backend/storage/ipc/ipc.c
+@@ -437,3 +437,18 @@ check_on_shmem_exit_lists_are_empty(void)
+ 		elog(FATAL, "on_shmem_exit has been called prematurely");
+ 	/* Checking DSM detach state seems unnecessary given the above */
+ }
++
++/*
++ * ResetIPCState - Reset IPC static state for embedded PostgreSQL reopen
++ */
++void
++ResetIPCState(void)
++{
++	/*
++	 * Reset atexit callback state so that subsequent initialization
++	 * doesn't trigger stale exit handlers.
++	 */
++	atexit_callback_setup = false;
++	on_proc_exit_index = 0;
++	on_shmem_exit_index = 0;
++}

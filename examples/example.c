@@ -412,9 +412,6 @@ main(int argc, char **argv)
 	}
 
 	printf("Step 4: Try to poll for notifications...\n");
-	printf("NOTE: In single-user embedded mode, notifications are logged\n");
-	printf("      via elog() rather than queued for retrieval. Check stderr\n");
-	printf("      output for INFO messages about the notifications.\n\n");
 
 	while (true) {
 		pg_notification *notif = pg_embedded_poll_notifications();

@@ -1,0 +1,17 @@
+diff --git a/src/backend/utils/misc/guc.c b/src/backend/utils/misc/guc.c
+index ce5449f2878..35c510929ee 100644
+--- a/src/backend/utils/misc/guc.c
++++ b/src/backend/utils/misc/guc.c
+@@ -6992,3 +6992,12 @@ call_enum_check_hook(struct config_enum *conf, int *newval, void **extra,
+ 
+ 	return true;
+ }
++
++/*
++ * ResetGUCState - Reset GUC static state for embedded PostgreSQL reopen
++ */
++void
++ResetGUCState(void)
++{
++	GUCMemoryContext = NULL;
++}

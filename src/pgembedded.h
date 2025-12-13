@@ -198,7 +198,7 @@ void pg_embedded_set_config(const pg_embedded_config *config);
 /* Get last error message - returns pointer to static string */
 const char *pg_embedded_error_message(void);
 
-char pg_error_msg[1024] = {0};
+extern char pg_error_msg[1024];
 #ifdef __cplusplus
 }
 #endif

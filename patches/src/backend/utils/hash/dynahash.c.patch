@@ -1,0 +1,17 @@
+diff --git a/src/backend/utils/hash/dynahash.c b/src/backend/utils/hash/dynahash.c
+index 5e68eab7e66..dca026cbeec 100644
+--- a/src/backend/utils/hash/dynahash.c
++++ b/src/backend/utils/hash/dynahash.c
+@@ -1960,3 +1960,12 @@ AtEOSubXact_HashTables(bool isCommit, int nestDepth)
+ 		}
+ 	}
+ }
++
++/*
++ * ResetDynaHashState - Reset dynamic hash static state for embedded PostgreSQL reopen
++ */
++void
++ResetDynaHashState(void)
++{
++	CurrentDynaHashCxt = NULL;
++}

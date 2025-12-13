@@ -1,0 +1,55 @@
+diff --git a/src/backend/access/transam/xlog.c b/src/backend/access/transam/xlog.c
+index 596d2ca5836..033f6cdf220 100644
+--- a/src/backend/access/transam/xlog.c
++++ b/src/backend/access/transam/xlog.c
+@@ -9564,3 +9564,50 @@ SetWalWriterSleeping(bool sleeping)
+ 	XLogCtl->WalWriterSleeping = sleeping;
+ 	SpinLockRelease(&XLogCtl->info_lck);
+ }
++
++/*
++ * ResetXLogState - Reset XLog static state for embedded PostgreSQL reopen
++ */
++void
++ResetXLogState(void)
++{
++	/* Reset pointers to shared memory structures */
++	XLogCtl = NULL;
++	WALInsertLocks = NULL;
++	ControlFile = NULL;
++
++	/* Reset local state variables */
++	LocalXLogInsertAllowed = -1;
++	LocalRecoveryInProgress = true;
++
++	/* Reset write result and open file state */
++	LogwrtResult.Write = 0;
++	LogwrtResult.Flush = 0;
++	openLogFile = -1;
++	openLogSegNo = 0;
++	openLogTLI = 0;
++
++	/* Reset memory context */
++#ifdef WAL_DEBUG
++	walDebugCxt = NULL;
++#endif
++
++	/* Reset WAL insert lock state */
++	MyLockNo = 0;
++	holdingAllLocks = false;
++
++	/* Reset backup state */
++	sessionBackupState = SESSION_BACKUP_NONE;
++
++	/* Reset checkpoint state */
++	CheckPointDistanceEstimate = 0;
++	PrevCheckPointDistance = 0;
++	doPageWrites = false;
++	lastFullPageWrites = false;
++
++	/* Reset recovery state */
++	LocalMinRecoveryPoint = 0;
++	LocalMinRecoveryPointTLI = 0;
++	updateMinRecoveryPoint = true;
++	RedoRecPtr = 0;
++}
