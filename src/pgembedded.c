@@ -378,9 +378,8 @@ copy_tuptable(pg_result *result, SPITupleTable *tuptable)
 {
 	TupleDesc	tupdesc = tuptable->tupdesc;
 	uint64_t	row;
-	int			col;
+	int		col;
 
-	result->cols = tupdesc->natts;
 
 	/* Allocate column names array */
 	result->colnames = (char **) malloc(result->cols * sizeof(char *));
@@ -501,7 +500,6 @@ pg_embedded_exec(const char *query)
 		PushActiveSnapshot(GetTransactionSnapshot());
 		snapshot_pushed = true;
 
-		/* Connect to SPI for this query */
 		if (SPI_connect() != SPI_OK_CONNECT)
 		{
 			snprintf(pg_error_msg, sizeof(pg_error_msg), "SPI_connect failed");
@@ -510,8 +508,6 @@ pg_embedded_exec(const char *query)
 		else
 		{
 			spi_connected = true;
-
-			/* Execute query via SPI */
 			ret = SPI_execute(query, false, 0);	/* false = read-write, 0 = no
 								 * row limit */
 
@@ -523,6 +519,7 @@ pg_embedded_exec(const char *query)
 
 			if (ret >= 0 && ret > 0 && SPI_tuptable != NULL)
 			{
+				result->cols = SPI_tuptable->tupdesc->natts;
 				/*
 				 * Copy data for queries with results (SELECT or RETURNING)
 				 */
@@ -532,35 +529,17 @@ pg_embedded_exec(const char *query)
 					result = NULL;
 				}
 			}
-		}
-
-		/* Always disconnect from SPI if we connected */
-		if (spi_connected)
-		{
 			SPI_finish();
 			spi_connected = false;
 		}
 
-		/* Always pop the snapshot */
-		if (snapshot_pushed)
-		{
-			PopActiveSnapshot();
-		}
+		snapshot_pushed = false;
+		PopActiveSnapshot();
 
-		/* Handle success or failure */
-		if (result != NULL && result->status >= 0)
-		{
-			/* Success - commit if implicit transaction */
-			if (implicit_tx)
-			{
+		if (implicit_tx) {
+			if (result != NULL && result->status >= 0) {
 				CommitTransactionCommand();
-			}
-		}
-		else
-		{
-			/* Failure - abort if implicit transaction */
-			if (implicit_tx)
-			{
+			} else {
 				AbortCurrentTransaction();
 			}
 		}
@@ -569,29 +548,16 @@ pg_embedded_exec(const char *query)
 	{
 		fprintf(stderr, "[WARN] In PG_CATCH\n");
 
-		/* Get error data and copy message before cleanup */
 		edata = CopyErrorData();
 		FlushErrorState();
 
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "Query failed: %s", edata->message);
 
-		/*
-		 * Clean up in the error path.
-		 * SPI_finish() and PopActiveSnapshot() will be called during
-		 * AbortCurrentTransaction(), so we don't need to call them explicitly.
-		 * Just make sure we don't leave the snapshot stack corrupted.
-		 */
-
-		/*
-		 * Abort the current transaction.
-		 * This resets memory contexts and cleans up resources.
-		 */
 		if (snapshot_pushed) PopActiveSnapshot();
 		if (spi_connected) SPI_finish();
 		AbortCurrentTransaction();
 
-		/* Clean up and return partial result with error */
 		result->status = -1;
 	}
 	PG_END_TRY();
