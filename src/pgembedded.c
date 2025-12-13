@@ -57,6 +57,28 @@ static pg_notification_node *notification_queue_tail = NULL;
 
 void InitStandaloneProcess_(const char *argv0);
 
+typedef void (*cleanup_fn)(void);
+void library_cleanup(void);
+
+static cleanup_fn handlers[32];
+static int handler_count = 0;
+
+
+int __wrap_atexit(cleanup_fn func) {
+    printf("Registering handler %d\n", handler_count);
+    if (handler_count >= 32) return -1;
+    handlers[handler_count++] = func;
+    return 0;
+}
+
+void execute_atexit(void) {
+    for (int i = handler_count - 1; i >= 0; i--) {
+	printf("Executing atexit handler %d\n", i);
+        handlers[i]();
+    }
+    handler_count = 0;
+}
+
 /*
  * Capture notifications into our local queue for embedded mode.
  * This is called by ProcessNotifyInterrupt via our custom whereToSendOutput handler.
@@ -1112,27 +1134,8 @@ pg_embedded_shutdown(void)
 	}
 	PG_END_TRY();
 
-	fprintf(stderr, "Resetting context\n");
-	// 1. Reset Memory Contexts
-    // This ensures MemoryContextInit() runs again in the next startup.
-    // Note: We don't free them because shmem_exit/cleanup may have already
-    // invalidated the underlying allocator state. We just want to drop the reference.
-    TopMemoryContext = NULL;
-    ErrorContext = NULL;
-    MessageContext = NULL;
+	execute_atexit();
 
-
-    // 2. Reset Data Directory and Config
-    // This ensures SetDataDir() accepts the new path in the next startup
-    // and SelectConfigFiles() re-scans for the config file.
-    // (Variables defined in miscadmin.h and utils/guc.h)
-    DataDir = NULL;
-    ConfigFileName = NULL;
-	MyProc = NULL;
-	MyProcPid = 0;
-
-    // 3. Reset output destination default
-    whereToSendOutput = DestDebug;
 	/*
 	 * Restore original working directory so that relative paths work
 	 * correctly if we re-initialize later.
