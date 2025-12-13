@@ -332,10 +332,10 @@ pg_embedded_init_internal(const char *data_dir, const char *dbname,
 
 		/* Get error data */
 		edata = CopyErrorData();
-		FlushErrorState();
 
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "Initialization failed: %s", edata->message);
+		FlushErrorState();
 
 		FreeErrorData(edata);
 		return -1;
@@ -549,11 +549,11 @@ pg_embedded_exec(const char *query)
 		fprintf(stderr, "[WARN] In PG_CATCH\n");
 
 		edata = CopyErrorData();
-		FlushErrorState();
 
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "Query failed: %s", edata->message);
 
+		FlushErrorState();
 		if (snapshot_pushed) PopActiveSnapshot();
 		if (spi_connected) SPI_finish();
 		AbortCurrentTransaction();
@@ -640,9 +640,9 @@ pg_embedded_begin(void)
 		ErrorData  *edata;
 
 		edata = CopyErrorData();
-		FlushErrorState();
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "BEGIN failed: %s", edata->message);
+		FlushErrorState();
 		FreeErrorData(edata);
 		AbortCurrentTransaction();
 		return -1;
@@ -681,9 +681,9 @@ pg_embedded_commit(void)
 		ErrorData  *edata;
 
 		edata = CopyErrorData();
-		FlushErrorState();
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "COMMIT failed: %s", edata->message);
+		FlushErrorState();
 		FreeErrorData(edata);
 		AbortCurrentTransaction();
 		return -1;
@@ -802,9 +802,9 @@ pg_embedded_listen(const char *channel)
 		ErrorData *edata;
 
 		edata = CopyErrorData();
-		FlushErrorState();
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "LISTEN failed: %s", edata->message);
+		FlushErrorState();
 		FreeErrorData(edata);
 		AbortCurrentTransaction();
 		return -1;
@@ -859,9 +859,9 @@ pg_embedded_unlisten(const char *channel)
 		ErrorData *edata;
 
 		edata = CopyErrorData();
-		FlushErrorState();
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "UNLISTEN failed: %s", edata->message);
+		FlushErrorState();
 		FreeErrorData(edata);
 		AbortCurrentTransaction();
 		return -1;
@@ -914,9 +914,9 @@ pg_embedded_notify(const char *channel, const char *payload)
 		ErrorData *edata;
 
 		edata = CopyErrorData();
-		FlushErrorState();
 		snprintf(pg_error_msg, sizeof(pg_error_msg),
 				 "NOTIFY failed: %s", edata->message);
+		FlushErrorState();
 		FreeErrorData(edata);
 		AbortCurrentTransaction();
 		return -1;
