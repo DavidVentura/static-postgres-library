@@ -15,6 +15,7 @@
 
 #include "postgres.h"
 
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -28,7 +29,6 @@
 #include "executor/spi.h"
 #include "libpq/libpq.h"
 #include "libpq/pqsignal.h"
-#include "miscadmin.h"
 #include "postmaster/postmaster.h"
 #include "storage/ipc.h"
 #include "storage/proc.h"
@@ -44,16 +44,7 @@
 #define  NUM_RESERVED_FDS 10
 
 /* Notification queue for embedded mode */
-typedef struct pg_notification_node
-{
-	char *channel;
-	char *payload;
-	int sender_pid;
-	struct pg_notification_node *next;
-} pg_notification_node;
 
-static pg_notification_node *notification_queue_head = NULL;
-static pg_notification_node *notification_queue_tail = NULL;
 
 void InitStandaloneProcess_(const char *argv0);
 
@@ -63,6 +54,7 @@ void library_cleanup(void);
 static cleanup_fn handlers[32];
 static int handler_count = 0;
 
+extern void reset_state();
 
 int __wrap_atexit(cleanup_fn func) {
     printf("Registering handler %d\n", handler_count);
@@ -79,46 +71,9 @@ void execute_atexit(void) {
     handler_count = 0;
 }
 
-/*
- * Capture notifications into our local queue for embedded mode.
- * This is called by ProcessNotifyInterrupt via our custom whereToSendOutput handler.
- */
-static void
-pg_embedded_capture_notification(const char *channel, const char *payload, int32 srcPid)
-{
-	pg_notification_node *node;
-
-	node = (pg_notification_node *) malloc(sizeof(pg_notification_node));
-	if (!node)
-		return;
-
-	node->channel = strdup(channel);
-	node->payload = strdup(payload ? payload : "");
-	node->sender_pid = srcPid;
-	node->next = NULL;
-
-	if (!node->channel || !node->payload)
-	{
-		if (node->channel) free(node->channel);
-		if (node->payload) free(node->payload);
-		free(node);
-		return;
-	}
-
-	if (notification_queue_tail)
-	{
-		notification_queue_tail->next = node;
-		notification_queue_tail = node;
-	}
-	else
-	{
-		notification_queue_head = notification_queue_tail = node;
-	}
-}
 
 /* Static state */
 static bool pg_initialized = false;
-static char pg_error_msg[1024] = {0};
 static char original_cwd[MAXPGPATH] = {0};
 
 /* Pre-initialization config settings */
@@ -131,7 +86,6 @@ static struct {
 	.synchronous_commit = true,     /* default: enabled */
 	.full_page_writes = true        /* default: enabled */
 };
-
 
 
 /*
@@ -155,6 +109,7 @@ pg_embedded_initdb(const char *data_dir, const char *username,
 	}
 
 	/* Call the in-process initdb implementation */
+	reset_state();
 	ret = pg_embedded_initdb_main(data_dir, username, encoding, locale);
 
 	if (ret != 0)
@@ -200,24 +155,6 @@ pg_embedded_init_internal(const char *data_dir, const char *dbname,
 
 		/* Initialize memory context system - CRITICAL! */
 		MemoryContextInit();
-		fprintf(stderr, "Context\n");
-
-		/*
-		 * Set up the executable path. For embedded use, we use argv[0] which
-		 * should be set to progname. If my_exec_path hasn't been set yet,
-		 * find it now.
-
-		if (my_exec_path[0] == '\0')
-		{
-			if (find_my_exec(progname, my_exec_path) < 0)
-			{
-				strlcpy(my_exec_path, progname, MAXPGPATH);
-			}
-		}
-
-		if (pkglib_path[0] == '\0')
-			get_pkglib_path(my_exec_path, pkglib_path);
-		 */
 
 		/* Save current working directory so we can restore it on shutdown */
 		if (!getcwd(original_cwd, MAXPGPATH))
@@ -232,7 +169,6 @@ pg_embedded_init_internal(const char *data_dir, const char *dbname,
 
 		/* Initialize as standalone backend */
 		InitStandaloneProcess_(progname);
-		fprintf(stderr, "InitStandalone\n");
 
 
 		/*
@@ -250,7 +186,6 @@ pg_embedded_init_internal(const char *data_dir, const char *dbname,
 
 		/* Initialize configuration */
 		InitializeGUCOptions();
-		fprintf(stderr, "InitGUC\n");
 
 		/*
 		 * Apply pre-initialization performance config
@@ -277,7 +212,7 @@ pg_embedded_init_internal(const char *data_dir, const char *dbname,
 		}
 
 		/* Load configuration files */
-		SelectConfigFiles(NULL, username);
+		SelectConfigFiles(data_dir, username);
 
 		/* Validate and switch to data directory */
 		checkDataDir();
@@ -361,7 +296,7 @@ pg_embedded_init_internal(const char *data_dir, const char *dbname,
 		whereToSendOutput = DestNone;
 
 		/* Register notification hook to capture NOTIFY messages */
-		pg_notify_hook = pg_embedded_capture_notification;
+		install_notification_hook();
 
 		/*
 		 * Create the memory context for query processing.
@@ -575,8 +510,8 @@ pg_embedded_exec(const char *query)
 			spi_connected = true;
 
 			/* Execute query via SPI */
-			ret = SPI_execute(query, false, 0);		/* false = read-write, 0 = no
-													 * row limit */
+			ret = SPI_execute(query, false, 0);	/* false = read-write, 0 = no
+								 * row limit */
 
 			result->status = ret;
 			result->rows = SPI_processed;
@@ -1024,89 +959,6 @@ pg_embedded_notify(const char *channel, const char *payload)
 }
 
 /*
- * pg_embedded_poll_notifications
- *
- * Poll for pending notifications and return the first one
- * Returns a newly allocated pg_notification structure that must be freed
- * with pg_embedded_free_notification(), or NULL if no notifications pending
- *
- * In embedded mode, we collect notifications by overriding NotifyMyFrontEnd()
- * to store them in a local queue. This function processes the async notification
- * queue (by calling ProcessNotifyInterrupt) and returns notifications one at a time.
- */
-pg_notification *
-pg_embedded_poll_notifications(void)
-{
-	pg_notification *result = NULL;
-	pg_notification_node *node;
-
-	if (!pg_initialized)
-	{
-		snprintf(pg_error_msg, sizeof(pg_error_msg), "Not initialized");
-		return NULL;
-	}
-
-	PG_TRY();
-	{
-		ProcessNotifyInterrupt(false);
-	}
-	PG_CATCH();
-	{
-		ErrorData *edata;
-
-		edata = CopyErrorData();
-		FlushErrorState();
-		snprintf(pg_error_msg, sizeof(pg_error_msg),
-				 "Poll notifications failed: %s", edata->message);
-		FreeErrorData(edata);
-	}
-	PG_END_TRY();
-
-	if (notification_queue_head)
-	{
-		node = notification_queue_head;
-		notification_queue_head = node->next;
-		if (!notification_queue_head)
-			notification_queue_tail = NULL;
-
-		result = (pg_notification *) malloc(sizeof(pg_notification));
-		if (result)
-		{
-			result->channel = node->channel;
-			result->payload = node->payload;
-			result->sender_pid = node->sender_pid;
-		}
-		else
-		{
-			free(node->channel);
-			free(node->payload);
-			snprintf(pg_error_msg, sizeof(pg_error_msg), "Out of memory");
-		}
-		free(node);
-	}
-
-	return result;
-}
-
-/*
- * pg_embedded_free_notification
- *
- * Free a notification structure returned by pg_embedded_poll_notifications
- */
-void
-pg_embedded_free_notification(pg_notification *notification)
-{
-	if (!notification)
-		return;
-
-	if (notification->channel)
-		free(notification->channel);
-	if (notification->payload)
-		free(notification->payload);
-	free(notification);
-}
-
-/*
  * pg_embedded_shutdown
  *
  * Shutdown embedded PostgreSQL instance
@@ -1142,11 +994,9 @@ pg_embedded_shutdown(void)
 	 */
 	if (original_cwd[0] != '\0')
 	{
-		fprintf(stderr, "chdir to %s\n", original_cwd);
 		if (chdir(original_cwd) < 0)
 		{
-			fprintf(stderr, "Warning: Failed to restore working directory to %s\n",
-					original_cwd);
+			fprintf(stderr, "Warning: Failed to restore working directory to %s\n", original_cwd);
 		}
 	}
 

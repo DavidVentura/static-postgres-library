@@ -106,6 +106,9 @@ typedef struct pg_notification
 	int sender_pid;       /* PID of notifying backend (in embedded mode, always own PID) */
 } pg_notification;
 
+
+void reset_notification_queue();
+void install_notification_hook();
 /* Listen for notifications on a channel
  *
  * channel: Channel name to listen on
@@ -195,6 +198,7 @@ void pg_embedded_set_config(const pg_embedded_config *config);
 /* Get last error message - returns pointer to static string */
 const char *pg_embedded_error_message(void);
 
+char pg_error_msg[1024] = {0};
 #ifdef __cplusplus
 }
 #endif

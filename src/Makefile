@@ -3,14 +3,14 @@
 
 # Configuration
 CC = musl-gcc
-CFLAGS = -static -I"../vendor/pg18/src/include" -O2 -g -fdata-sections -ffunction-sections
+CFLAGS = -static -I"../vendor/pg18/src/include" -O0 -ggdb -fdata-sections -ffunction-sections
 LDFLAGS = -Wl,--gc-sections
 
 # PostgreSQL backend libs list
 PG_BACKEND_LIBS = ../vendor/pg18/src/backend/backend-libs.txt
 
 # Source files
-SRCS = pgembedded.c initdb_simple.c stubs.c
+SRCS = pgembedded.c initdb_simple.c stubs.c pg_reset.c pg_notification.c
 OBJS = $(SRCS:.c=.o)
 
 OUTPUT = libpostgres.a
