@@ -7,15 +7,20 @@
 #include "postgres.h"
 #include "fmgr.h"
 
-typedef const Pg_finfo_record *(*PGFInfoFunction) (void);
 typedef void (*PG_init_t) (void);
+typedef const Pg_finfo_record *(*PGFInfoFunction) (void);
 
 typedef struct StaticExtensionFunc
 {
 	const char *funcname;
 	PGFunction	funcptr;
-	PGFInfoFunction finfofunc;
 } StaticExtensionFunc;
+
+typedef struct StaticExtensionFInfo
+{
+	const char *funcname;
+	PGFInfoFunction finfofunc;
+} StaticExtensionFInfo;
 
 typedef struct StaticExtensionLib
 {
@@ -24,6 +29,7 @@ typedef struct StaticExtensionLib
 	PG_init_t	init_func;
 	bool		init_called;
 	const StaticExtensionFunc *functions;
+	const StaticExtensionFInfo *finfo_functions;
 } StaticExtensionLib;
 
 #define STATIC_LIB_HANDLE_MAGIC 0xDEADBEEF
@@ -36,7 +42,8 @@ typedef struct StaticLibHandle
 
 extern void register_static_extension(const char *library,
 									  PG_init_t init_func,
-									  const StaticExtensionFunc *functions);
+									  const StaticExtensionFunc *functions,
+									  const StaticExtensionFInfo *finfo_functions);
 
 extern void *pg_load_external_function(const char *filename,
 									   const char *funcname,

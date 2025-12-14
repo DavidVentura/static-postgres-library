@@ -12,7 +12,8 @@ static StaticExtensionLib *registered_libraries = NULL;
 void
 register_static_extension(const char *library,
 						  PG_init_t init_func,
-						  const StaticExtensionFunc *functions)
+						  const StaticExtensionFunc *functions,
+						  const StaticExtensionFInfo *finfo_functions)
 {
 	StaticExtensionLib *lib;
 
@@ -26,6 +27,7 @@ register_static_extension(const char *library,
 	lib->init_func = init_func;
 	lib->init_called = false;
 	lib->functions = functions;
+	lib->finfo_functions = finfo_functions;
 
 	lib->next = registered_libraries;
 	registered_libraries = lib;
@@ -163,7 +165,7 @@ pg_lookup_external_function(void *filehandle, const char *funcname)
 {
 	StaticLibHandle *handle;
 	const StaticExtensionFunc *func;
-	const char *actual_funcname;
+	const StaticExtensionFInfo *finfo;
 
 	if (filehandle == NULL)
 		return NULL;
@@ -178,13 +180,12 @@ pg_lookup_external_function(void *filehandle, const char *funcname)
 
 	if (strncmp(funcname, "pg_finfo_", 9) == 0)
 	{
-		actual_funcname = funcname + 9;
-		func = lookup_function_in_library(handle->lib, actual_funcname);
-
-		if (func == NULL || func->finfofunc == NULL)
-			return NULL;
-
-		return (void *) func->finfofunc;
+		for (finfo = handle->lib->finfo_functions; finfo && finfo->funcname != NULL; finfo++)
+		{
+			if (strcmp(finfo->funcname, funcname) == 0)
+				return (void *) finfo->finfofunc;
+		}
+		return NULL;
 	}
 
 	func = lookup_function_in_library(handle->lib, funcname);

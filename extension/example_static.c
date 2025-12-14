@@ -46,18 +46,18 @@ _PG_init(void)
 	elog(NOTICE, "Example static extension initialized");
 }
 
-/*
- * Function table for static registration
- */
 const StaticExtensionFunc example_static_functions[] = {
-	{"add_one", add_one, pg_finfo_add_one},
-	{"hello_world", hello_world, pg_finfo_hello_world},
-	{NULL, NULL, NULL}  /* Terminator */
+	{"add_one", add_one},
+	{"hello_world", hello_world},
+	{NULL, NULL}
 };
 
-/*
- * Registration function - called by the test program
- */
+const StaticExtensionFInfo example_static_finfo[] = {
+	{"pg_finfo_add_one", pg_finfo_add_one},
+	{"pg_finfo_hello_world", pg_finfo_hello_world},
+	{NULL, NULL}
+};
+
 extern void example_static_PG_init(void);
 
 void
@@ -66,6 +66,7 @@ register_example_static(void)
 	register_static_extension(
 		"example_static",
 		example_static_PG_init,
-		example_static_functions
+		example_static_functions,
+		example_static_finfo
 	);
 }

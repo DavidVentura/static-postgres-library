@@ -8,6 +8,7 @@
 
 #include "postgres.h"
 #include "fmgr.h"
+#include "extensions.h"
 
 /*
  * External declarations for functions implemented in pl_handler.o
@@ -28,14 +29,18 @@ extern const Pg_finfo_record *pg_finfo_plpgsql_validator(void);
 
 extern void plpgsql_PG_init(void);
 
-/*
- * Function metadata table for static registration
- */
 const StaticExtensionFunc plpgsql_static_functions[] = {
-	{"plpgsql_call_handler", plpgsql_call_handler, pg_finfo_plpgsql_call_handler},
-	{"plpgsql_inline_handler", plpgsql_inline_handler, pg_finfo_plpgsql_inline_handler},
-	{"plpgsql_validator", plpgsql_validator, pg_finfo_plpgsql_validator},
-	{NULL, NULL, NULL}
+	{"plpgsql_call_handler", plpgsql_call_handler},
+	{"plpgsql_inline_handler", plpgsql_inline_handler},
+	{"plpgsql_validator", plpgsql_validator},
+	{NULL, NULL}
+};
+
+const StaticExtensionFInfo plpgsql_static_finfo[] = {
+	{"pg_finfo_plpgsql_call_handler", pg_finfo_plpgsql_call_handler},
+	{"pg_finfo_plpgsql_inline_handler", pg_finfo_plpgsql_inline_handler},
+	{"pg_finfo_plpgsql_validator", pg_finfo_plpgsql_validator},
+	{NULL, NULL}
 };
 
 void
@@ -44,6 +49,7 @@ register_pl_pgsql(void)
 	register_static_extension(
 		"plpgsql",
 		plpgsql_PG_init,
-		plpgsql_static_functions
+		plpgsql_static_functions,
+		plpgsql_static_finfo
 	);
 }
