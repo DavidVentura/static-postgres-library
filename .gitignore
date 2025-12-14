@@ -1,3 +1,4 @@
 *.o
 *.a
 *.vars
+extension/**/*_data.h

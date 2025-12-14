@@ -9,11 +9,19 @@
 
 static StaticExtensionLib *registered_libraries = NULL;
 
+StaticExtensionLib *
+get_registered_libraries(void)
+{
+	return registered_libraries;
+}
+
 void
 register_static_extension(const char *library,
-						  PG_init_t init_func,
-						  const StaticExtensionFunc *functions,
-						  const StaticExtensionFInfo *finfo_functions)
+			  PG_init_t init_func,
+			  const StaticExtensionFunc *functions,
+			  const StaticExtensionFInfo *finfo_functions,
+			  const EmbeddedFile *control_file,
+			  const EmbeddedFile *script_file)
 {
 	StaticExtensionLib *lib;
 
@@ -28,6 +36,8 @@ register_static_extension(const char *library,
 	lib->init_called = false;
 	lib->functions = functions;
 	lib->finfo_functions = finfo_functions;
+	lib->control_file = control_file;
+	lib->script_file = script_file;
 
 	lib->next = registered_libraries;
 	registered_libraries = lib;
@@ -125,8 +135,7 @@ pg_load_external_function(const char *filename,
 	{
 		ereport(ERROR,
 				(errcode(ERRCODE_UNDEFINED_FILE),
-				 errmsg("could not find library \"%s\" in registered static extensions",
-						filename),
+				 errmsg("could not find library \"%s\" in registered static extensions", filename),
 				 errhint("The library must be registered via register_static_extension() before use.")));
 	}
 

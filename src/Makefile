@@ -4,14 +4,21 @@
 include ../common.mk
 
 # Source files
-SRCS = pgembedded.c initdb_simple.c stubs.c pg_reset.c pg_notification.c extensions.c
+SRCS = pgembedded.c initdb_simple.c stubs.c pg_reset.c pg_notification.c extensions.c embedded_fopen.c embedded_timezone.c
 OBJS = $(SRCS:.c=.o)
+
+GENERATED = embedded_timezone_data.h
 
 OUTPUT = libpostgres.a
 
+TZ_DEFAULT_FILE = ../vendor/pg18/src/timezone/tznames/Default
+
 .PHONY: all clean
 
-all: $(OUTPUT)
+all: $(GENERATED) $(OUTPUT)
+
+embedded_timezone_data.h: $(TZ_DEFAULT_FILE)
+	xxd -include -name timezone_default < $< | sed 's/unsigned/const unsigned/' > $@
 
 # Compile C files to object files
 %.o: %.c
@@ -23,4 +30,4 @@ $(OUTPUT): $(OBJS)
 	@echo "Object count: $$(ar t $@ | wc -l)"
 
 clean:
-	rm -f $(OBJS) $(OUTPUT) libpostgres.mri
+	rm -f $(OBJS) $(OUTPUT) libpostgres.mri $(GENERATED)

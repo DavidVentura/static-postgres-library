@@ -18,8 +18,8 @@ extensions:
 	$(MAKE) -C $(EXTENSIONS_DIR)
 
 # Pattern rule for simple examples
-example initdb reopen: %: %.c $(LIBPOSTGRES)
-	$(CC) $(CFLAGS) $< $(LIBPOSTGRES) $(LDFLAGS) -o $@
+example initdb reopen: %: %.c $(LIBPOSTGRES) | extensions
+	$(CC) $(CFLAGS) $< $(EXTENSION_OBJS) $(LIBPOSTGRES) $(LDFLAGS) -o $@
 
 test_create_extension: test_create_extension.c $(EXTENSION_OBJS) $(LIBPOSTGRES) | extensions
 	$(CC) $(CFLAGS) $< $(EXTENSION_OBJS) $(LIBPOSTGRES) $(LDFLAGS) -o $@

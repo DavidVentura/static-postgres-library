@@ -17,6 +17,7 @@
 
 #include "pgembedded.h"
 
+extern void register_plpgsql(void);
 static void
 print_result(pg_result *result)
 {
@@ -88,6 +89,7 @@ main(int argc, char **argv)
 	printf("  Database: postgres\n");
 	printf("  User: postgres\n\n");
 
+	register_plpgsql();
 	if (pg_embedded_init(datadir, "postgres", "postgres") != 0)
 	{
 		fprintf(stderr, "ERROR: Initialization failed: %s\n",
@@ -96,6 +98,39 @@ main(int argc, char **argv)
 	}
 
 	printf("PostgreSQL initialized successfully!\n\n");
+
+	/* Test 0: Check installed extensions */
+	printf("----------------------------------------\n");
+	printf("Test 0: Check installed extensions\n");
+	printf("----------------------------------------\n");
+	result = pg_embedded_exec("SELECT extname, extversion FROM pg_extension ORDER BY extname");
+	if (result && result->status < 0)
+	{
+		fprintf(stderr, "ERROR: %s\n", pg_embedded_error_message());
+	}
+	print_result(result);
+	pg_embedded_free_result(result);
+
+	/* Test 0b: Try to use plpgsql without having registered it */
+	printf("----------------------------------------\n");
+	printf("Test 0b: Try to create a plpgsql function\n");
+	printf("----------------------------------------\n");
+	result = pg_embedded_exec(
+		"CREATE OR REPLACE FUNCTION test_plpgsql() RETURNS INTEGER AS $$ "
+		"BEGIN "
+		"  RETURN 42; "
+		"END; "
+		"$$ LANGUAGE plpgsql");
+	if (result && result->status < 0)
+	{
+		fprintf(stderr, "ERROR: %s\n", pg_embedded_error_message());
+	}
+	else
+	{
+		printf("SUCCESS: plpgsql function created!\n");
+	}
+	print_result(result);
+	pg_embedded_free_result(result);
 
 	/* Test 1: Get PostgreSQL version */
 	printf("----------------------------------------\n");

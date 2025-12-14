@@ -1,4 +1,4 @@
-.PHONY: all build clean src examples patch pg-backend-libs
+.PHONY: all build clean src examples patch pg-backend-libs extensions
 
 # Default target builds everything
 all: build examples
@@ -9,8 +9,13 @@ patch:
 # Build the base PostgreSQL components and our library
 build: src
 
+extensions: pg-backend-libs
+	$(MAKE) -C extension
+	$(MAKE) -C extension/pgvector
+	$(MAKE) -C extension/plpgsql
+
 # Build examples (depends on src being built)
-examples: src
+examples: src extensions
 	$(MAKE) -C examples
 
 # Build PostgreSQL backend object files and libraries

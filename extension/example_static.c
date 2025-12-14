@@ -67,6 +67,8 @@ register_example_static(void)
 		"example_static",
 		example_static_PG_init,
 		example_static_functions,
-		example_static_finfo
+		example_static_finfo,
+		NULL,
+		NULL
 	);
 }

@@ -11,13 +11,13 @@ ARCHIVE = libpgvector_static.a
 
 .PHONY: all clean
 
-all: $(ARCHIVE) extension/vector.control extension/vector--0.8.1.sql
+all: $(ARCHIVE)
 
 $(LIBVECTOR):
 	bash build-static.sh
 
 $(WRAPPER_SRC): $(LIBVECTOR)
-	python3 ../../helpers/gen_static_extension.py pgvector $(LIBVECTOR) > $@
+	python3 ../../helpers/gen_static_extension.py pgvector $(LIBVECTOR) ../../vendor/pgvector/vector.control ../../vendor/pgvector/sql/vector.sql > $@
 
 $(WRAPPER_OBJ): $(WRAPPER_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -35,8 +35,3 @@ clean:
 	rm -f $(WRAPPER_SRC) $(WRAPPER_OBJ) $(ARCHIVE)
 	rm -rf .tmp_objs
 	rm -f extension/*
-
-extension/vector--0.8.1.sql:
-	cp ../../vendor/pgvector/sql/vector.sql $@
-extension/vector.control:
-	sed 's-$$libdir/--' ../../vendor/pgvector/vector.control > $@

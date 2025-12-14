@@ -10,6 +10,13 @@
 typedef void (*PG_init_t) (void);
 typedef const Pg_finfo_record *(*PGFInfoFunction) (void);
 
+typedef struct EmbeddedFile
+{
+	const char *filename;
+	const unsigned char *data;
+	unsigned int len;
+} EmbeddedFile;
+
 typedef struct StaticExtensionFunc
 {
 	const char *funcname;
@@ -30,6 +37,8 @@ typedef struct StaticExtensionLib
 	bool		init_called;
 	const StaticExtensionFunc *functions;
 	const StaticExtensionFInfo *finfo_functions;
+	const EmbeddedFile *control_file;
+	const EmbeddedFile *script_file;
 } StaticExtensionLib;
 
 #define STATIC_LIB_HANDLE_MAGIC 0xDEADBEEF
@@ -41,16 +50,19 @@ typedef struct StaticLibHandle
 } StaticLibHandle;
 
 extern void register_static_extension(const char *library,
-									  PG_init_t init_func,
-									  const StaticExtensionFunc *functions,
-									  const StaticExtensionFInfo *finfo_functions);
+					  PG_init_t init_func,
+					  const StaticExtensionFunc *functions,
+					  const StaticExtensionFInfo *finfo_functions,
+					  const EmbeddedFile *control_file,
+					  const EmbeddedFile *script_file);
 
 extern void *pg_load_external_function(const char *filename,
-									   const char *funcname,
-									   bool signalNotFound,
-									   void **filehandle);
+					   const char *funcname,
+					   bool signalNotFound,
+					   void **filehandle);
 
-extern void *pg_lookup_external_function(void *filehandle,
-										 const char *funcname);
+extern void *pg_lookup_external_function(void *filehandle, const char *funcname);
+
+extern StaticExtensionLib *get_registered_libraries(void);
 
 #endif

@@ -12,7 +12,7 @@
 
 /* Declaration of extension registration function */
 extern void register_example_static(void);
-extern void register_pl_pgsql(void);
+extern void register_plpgsql(void);
 extern void register_pgvector(void);
 
 int
@@ -38,7 +38,7 @@ main(int argc, char *argv[])
 	/* Setup extension files location */
 	printf("Registering static extension...\n");
 	register_example_static();
-	register_pl_pgsql();
+	register_plpgsql();
 	register_pgvector();
 
 	printf("Extension registered!\n\n");

@@ -436,13 +436,28 @@ const StaticExtensionFInfo pgvector_static_finfo[] = {
 	{NULL, NULL}
 };
 
+#include "pgvector_data.h"
+
 void
 register_pgvector(void)
 {
+	static const EmbeddedFile control_file = {
+		.filename = "share/extension/pgvector.control",
+		.data = pgvector_control,
+		.len = pgvector_control_len
+	};
+	static const EmbeddedFile script_file = {
+		.filename = "share/extension/pgvector.sql",
+		.data = pgvector_script,
+		.len = pgvector_script_len
+	};
+
 	register_static_extension(
 		"pgvector",
 		pgvector_PG_init,
 		pgvector_static_functions,
-		pgvector_static_finfo
+		pgvector_static_finfo,
+		&control_file,
+		&script_file
 	);
 }
