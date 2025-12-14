@@ -26,19 +26,7 @@ extern const Pg_finfo_record *pg_finfo_plpgsql_call_handler(void);
 extern const Pg_finfo_record *pg_finfo_plpgsql_inline_handler(void);
 extern const Pg_finfo_record *pg_finfo_plpgsql_validator(void);
 
-/*
- * External declaration for _PG_init
- * The initialization function from pl_handler.c
- * (renamed to avoid conflicts with other extensions)
- */
 extern void plpgsql_PG_init(void);
-
-/*
- * External declaration for Pg_magic_func
- * Defined by PG_MODULE_MAGIC in pl_handler.c
- * (renamed to avoid conflicts with other extensions)
- */
-extern const Pg_magic_struct *plpgsql_Pg_magic_func(void);
 
 /*
  * Function metadata table for static registration
@@ -55,7 +43,6 @@ register_pl_pgsql(void)
 {
 	register_static_extension(
 		"plpgsql",
-		plpgsql_Pg_magic_func(),
 		plpgsql_PG_init,
 		plpgsql_static_functions
 	);

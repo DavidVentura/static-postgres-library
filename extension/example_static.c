@@ -58,7 +58,6 @@ const StaticExtensionFunc example_static_functions[] = {
 /*
  * Registration function - called by the test program
  */
-extern const Pg_magic_struct *example_static_Pg_magic_func(void);
 extern void example_static_PG_init(void);
 
 void
@@ -66,7 +65,6 @@ register_example_static(void)
 {
 	register_static_extension(
 		"example_static",
-		example_static_Pg_magic_func(),
 		example_static_PG_init,
 		example_static_functions
 	);

@@ -11,7 +11,6 @@ static StaticExtensionLib *registered_libraries = NULL;
 
 void
 register_static_extension(const char *library,
-						  const Pg_magic_struct *magic,
 						  PG_init_t init_func,
 						  const StaticExtensionFunc *functions)
 {
@@ -24,7 +23,6 @@ register_static_extension(const char *library,
 				 errmsg("out of memory")));
 
 	lib->library = library;
-	lib->magic = magic;
 	lib->init_func = init_func;
 	lib->init_called = false;
 	lib->functions = functions;
@@ -118,7 +116,6 @@ pg_load_external_function(const char *filename,
 	StaticExtensionLib *lib;
 	const StaticExtensionFunc *func;
 	StaticLibHandle *handle;
-	extern const Pg_abi_values magic_data;
 
 	lib = lookup_static_library(filename);
 
@@ -129,21 +126,6 @@ pg_load_external_function(const char *filename,
 				 errmsg("could not find library \"%s\" in registered static extensions",
 						filename),
 				 errhint("The library must be registered via register_static_extension() before use.")));
-	}
-
-	if (lib->magic == NULL)
-	{
-		ereport(ERROR,
-			(errmsg("incompatible library \"%s\": missing magic block", lib->library),
-			 errhint("Extension libraries are required to use the PG_MODULE_MAGIC macro.")));
-	}
-
-	if (lib->magic->len != sizeof(Pg_magic_struct) ||
-		memcmp(&lib->magic->abi_fields, &magic_data, sizeof(Pg_abi_values)) != 0)
-	{
-		ereport(ERROR,
-			(errmsg("ABI fields do not agree for \"%s\"", lib->library),
-			 errhint("Is the extension built properly?")));
 	}
 
 	call_static_pg_init_once(lib);

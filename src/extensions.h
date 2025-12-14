@@ -21,7 +21,6 @@ typedef struct StaticExtensionLib
 {
 	struct StaticExtensionLib *next;
 	const char *library;
-	const Pg_magic_struct *magic;
 	PG_init_t	init_func;
 	bool		init_called;
 	const StaticExtensionFunc *functions;
@@ -36,7 +35,6 @@ typedef struct StaticLibHandle
 } StaticLibHandle;
 
 extern void register_static_extension(const char *library,
-									  const Pg_magic_struct *magic,
 									  PG_init_t init_func,
 									  const StaticExtensionFunc *functions);
 
