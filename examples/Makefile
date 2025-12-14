@@ -1,6 +1,6 @@
-CC = musl-gcc
-CFLAGS = -static -I"../src" -I"../vendor/pg18/src/include" -O0 -ggdb
-LDFLAGS = -Wl,--gc-sections
+include ../common.mk
+
+CFLAGS += -I"../src"
 LIBPOSTGRES = ../src/libpostgres.a
 EXTENSIONS_DIR = ../extension
 

@@ -1,6 +1,6 @@
-CC = musl-gcc
-AR = ar
-CFLAGS = -static -I"../../src" -I"../../vendor/pg18/src/include" -O0 -ggdb -fPIC
+include ../../common.mk
+
+CFLAGS += -I"../../src" -fPIC
 
 PLPGSQL_SRC_DIR = ../../vendor/pg18/src/pl/plpgsql/src
 PLPGSQL_OBJS = $(PLPGSQL_SRC_DIR)/pl_comp.o \
