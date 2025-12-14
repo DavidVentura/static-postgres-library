@@ -3,3 +3,6 @@
 	url = https://git.postgresql.org/git/postgresql.git
 	branch = REL_18_STABLE
 	shallow = true
+[submodule "vendor/pgvector"]
+	path = vendor/pgvector
+	url = https://github.com/pgvector/pgvector.git

@@ -13,6 +13,7 @@
 /* Declaration of extension registration function */
 extern void register_example_static(void);
 extern void register_pl_pgsql(void);
+extern void register_pgvector(void);
 
 int
 main(int argc, char *argv[])
@@ -38,6 +39,7 @@ main(int argc, char *argv[])
 	printf("Registering static extension...\n");
 	register_example_static();
 	register_pl_pgsql();
+	register_pgvector();
 
 	printf("Extension registered!\n\n");
 
@@ -111,6 +113,34 @@ main(int argc, char *argv[])
 	printf("Extension created successfully!\n\n");
 	pg_embedded_free_result(result);
 
+
+	if (pg_embedded_set_extension_path("/home/david/git/pl/extension/pgvector") != 0)
+	{
+		fprintf(stderr, "ERROR: Failed to set extension path: %s\n",
+				pg_embedded_error_message());
+		pg_embedded_shutdown();
+		return 1;
+	}
+	result = pg_embedded_exec("DROP EXTENSION IF EXISTS vector");
+	if (result && result->status < 0)
+	{
+		fprintf(stderr, "ERROR: %s\n", pg_embedded_error_message());
+		//pg_embedded_free_result(result);
+		//pg_embedded_shutdown();
+		//return 1;
+	}
+	pg_embedded_free_result(result);
+
+	result = pg_embedded_exec("CREATE EXTENSION vector");
+	if (result && result->status < 0)
+	{
+		fprintf(stderr, "ERROR: %s\n", pg_embedded_error_message());
+		//pg_embedded_free_result(result);
+		//pg_embedded_shutdown();
+		//return 1;
+	}
+	printf("Extension created successfully!\n\n");
+	pg_embedded_free_result(result);
 	/* Verify extension is installed */
 	printf("----------------------------------------\n");
 	printf("Test 2: List installed extensions\n");
@@ -193,9 +223,57 @@ main(int argc, char *argv[])
 	}
 	pg_embedded_free_result(result);
 
+	/* Test pgvector */
+	printf("----------------------------------------\n");
+	printf("Test 6: pgvector similarity search\n");
+	printf("----------------------------------------\n");
+
+	printf("Creating table with vector column...\n");
+	result = pg_embedded_exec("CREATE TABLE items (id bigserial PRIMARY KEY, embedding vector(3))");
+	if (result && result->status < 0)
+	{
+		fprintf(stderr, "ERROR: Failed to create table: %s\n",
+				pg_embedded_error_message());
+	}
+	else
+	{
+		printf("Table created successfully!\n");
+	}
+	pg_embedded_free_result(result);
+
+	printf("Inserting vector data...\n");
+	result = pg_embedded_exec("INSERT INTO items (embedding) VALUES ('[1,2,3]'), ('[4,5,6]')");
+	if (result && result->status < 0)
+	{
+		fprintf(stderr, "ERROR: Failed to insert data: %s\n",
+				pg_embedded_error_message());
+	}
+	else
+	{
+		printf("Data inserted successfully!\n");
+	}
+	pg_embedded_free_result(result);
+
+	printf("Performing vector similarity search...\n");
+	result = pg_embedded_exec("SELECT * FROM items ORDER BY embedding <-> '[3,1,2]' LIMIT 5");
+	if (result && result->status < 0)
+	{
+		fprintf(stderr, "ERROR: %s\n", pg_embedded_error_message());
+	}
+	else if (result && result->rows > 0)
+	{
+		printf("Found %ld results:\n", result->rows);
+		for (int row = 0; row < result->rows; row++)
+		{
+			printf("  id: %s, embedding: %s\n", result->values[row][0], result->values[row][1]);
+		}
+		printf("\n");
+	}
+	pg_embedded_free_result(result);
+
 	/* Test DROP EXTENSION */
 	printf("----------------------------------------\n");
-	printf("Test 6: DROP EXTENSION example_static\n");
+	printf("Test 7: DROP EXTENSION example_static\n");
 	printf("----------------------------------------\n");
 	result = pg_embedded_exec("DROP EXTENSION example_static");
 	if (result && result->status < 0)

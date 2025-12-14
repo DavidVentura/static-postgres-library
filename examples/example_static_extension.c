@@ -1,19 +1,82 @@
 /*
- * test_static_extension - Test program for static extensions
+ * Example static extension for PostgreSQL
  *
- * This demonstrates using a statically-linked extension by:
- * 1. Registering the extension at startup
- * 2. Creating functions via CREATE FUNCTION
- * 3. Testing the functions with SQL queries
+ * This demonstrates how to create a statically-linked extension
+ * using the register_static_extension() API.
+ *
+ * To use:
+ * 1. Compile this file and link it into the postgres binary
+ * 2. The extension will auto-register via __attribute__((constructor))
+ * 3. In postgres, you can use: CREATE EXTENSION example_static;
  */
+
+#include "postgres.h"
+#include "fmgr.h"
+#include "utils/builtins.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "pgembedded.h"
 
-/* Declaration of extension registration function */
-extern void register_example_static(void);
+/* Declare the magic block */
+PG_MODULE_MAGIC;
 
+/*
+ * Example function: add_one
+ * Returns input + 1
+ */
+PG_FUNCTION_INFO_V1(add_one);
+
+Datum
+add_one(PG_FUNCTION_ARGS)
+{
+	int32 arg = PG_GETARG_INT32(0);
+	PG_RETURN_INT32(arg + 1);
+}
+
+/*
+ * Example function: hello_world
+ * Returns a greeting string
+ */
+PG_FUNCTION_INFO_V1(hello_world);
+
+Datum
+hello_world(PG_FUNCTION_ARGS)
+{
+	PG_RETURN_TEXT_P(cstring_to_text("Hello from static extension!"));
+}
+
+/*
+ * Optional: _PG_init function called when library is loaded
+ */
+void
+_PG_init(void)
+{
+	elog(NOTICE, "Example static extension initialized");
+}
+
+const StaticExtensionFunc funcs[3] = {
+	{"add_one", add_one, pg_finfo_add_one},
+	{"hello_world", hello_world, pg_finfo_hello_world},
+	{NULL, NULL, NULL}  /* Terminator */
+};
+static void register_example_extension(void)
+{
+	/*
+	 * Register this extension with PostgreSQL's static extension system
+	 * Using compound literal to initialize function table at runtime
+	 */
+	register_static_extension(
+		"example_static",
+		Pg_magic_func(),
+		_PG_init,
+		funcs
+	);
+}
+
+/*
+ * Test main function - demonstrates the static extension
+ */
 int
 main(int argc, char *argv[])
 {
@@ -34,12 +97,10 @@ main(int argc, char *argv[])
 
 	datadir = argv[1];
 
-	printf("Registering static extension...\n");
-	register_example_static();
-	printf("Extension registered!\n\n");
-
 	printf("Initializing PostgreSQL...\n");
 	printf("  Data directory: %s\n\n", datadir);
+
+	register_example_extension();
 
 	if (pg_embedded_init(datadir, "postgres", "postgres") != 0)
 	{
@@ -47,6 +108,7 @@ main(int argc, char *argv[])
 				pg_embedded_error_message());
 		return 1;
 	}
+
 
 	printf("PostgreSQL initialized successfully!\n\n");
 
