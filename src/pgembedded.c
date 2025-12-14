@@ -971,6 +971,50 @@ pg_embedded_shutdown(void)
 	pg_initialized = false;
 }
 
+/*
+ * Set extension control path for CREATE EXTENSION
+ */
+int
+pg_embedded_set_extension_path(const char *path)
+{
+	extern char *Extension_control_path;
+
+	if (!pg_initialized)
+	{
+		snprintf(pg_error_msg, sizeof(pg_error_msg),
+				"PostgreSQL not initialized - call pg_embedded_init() first");
+		return -1;
+	}
+
+	if (path == NULL)
+	{
+		snprintf(pg_error_msg, sizeof(pg_error_msg),
+				"Extension path cannot be NULL");
+		return -1;
+	}
+
+	PG_TRY();
+	{
+		/* Use SetConfigOption to set the GUC variable */
+		SetConfigOption("extension_control_path", path,
+						PGC_SUSET, PGC_S_SESSION);
+	}
+	PG_CATCH();
+	{
+		ErrorData  *edata;
+
+		edata = CopyErrorData();
+		snprintf(pg_error_msg, sizeof(pg_error_msg),
+				"Failed to set extension path: %s", edata->message);
+		FreeErrorData(edata);
+		FlushErrorState();
+		return -1;
+	}
+	PG_END_TRY();
+
+	return 0;
+}
+
 // Patched to not look for its own binary
 void
 InitStandaloneProcess_(const char *argv0)

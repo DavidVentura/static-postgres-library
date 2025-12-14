@@ -1,4 +1,5 @@
-cd vendor/pg18
+set -euo pipefail
+cd ../vendor/pg18
 git diff --name-only | while read -r line; do
 	dir=$(dirname $line);
 	fname=$(basename $line);

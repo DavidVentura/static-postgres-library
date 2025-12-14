@@ -66,6 +66,20 @@ int pg_embedded_init(const char *data_dir, const char *dbname, const char *usern
 void pg_embedded_shutdown(void);
 
 /*
+ * Configuration
+ */
+
+/* Set extension control path for CREATE EXTENSION
+ *
+ * path: Colon-separated list of directories to search for .control files
+ *       (e.g., "../extensions:$system")
+ *
+ * Must be called after pg_embedded_init
+ * Returns 0 on success, -1 on error
+ */
+int pg_embedded_set_extension_path(const char *path);
+
+/*
  * Query execution
  */
 

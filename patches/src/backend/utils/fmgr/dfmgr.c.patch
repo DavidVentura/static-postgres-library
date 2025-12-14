@@ -1,0 +1,320 @@
+diff --git a/src/backend/utils/fmgr/dfmgr.c b/src/backend/utils/fmgr/dfmgr.c
+index 1366521f471..cd47bc44cbd 100644
+--- a/src/backend/utils/fmgr/dfmgr.c
++++ b/src/backend/utils/fmgr/dfmgr.c
+@@ -28,8 +28,31 @@
+ #include "utils/hsearch.h"
+ 
+ 
+-/* signature for PostgreSQL-specific library init function */
+-typedef void (*PG_init_t) (void);
++/*
++ * Static extension support - allows compile-time linking of extensions
++ * Note: StaticExtensionFunc and PG_init_t are defined in fmgr.h
++ */
++
++/* Per-library registration node (linked list) - private to dfmgr.c */
++typedef struct StaticExtensionLib
++{
++	struct StaticExtensionLib *next;	/* Linked list pointer */
++	const char *library;		/* Library name (e.g., "postgis-3") */
++	const Pg_magic_struct *magic;	/* PG_MODULE_MAGIC block */
++	PG_init_t	init_func;		/* Optional _PG_init function */
++	bool		init_called;	/* Tracks if _PG_init was called */
++	const StaticExtensionFunc *functions;	/* Array of functions, NULL-terminated */
++} StaticExtensionLib;
++
++/* Magic marker for static library handles */
++#define STATIC_LIB_HANDLE_MAGIC 0xDEADBEEF
++
++/* Handle type returned to callers via filehandle parameter */
++typedef struct StaticLibHandle
++{
++	uint32		magic;			/* STATIC_LIB_HANDLE_MAGIC */
++	StaticExtensionLib *lib;	/* Points to registered library */
++} StaticLibHandle;
+ 
+ /* hashtable entry for rendezvous variables */
+ typedef struct
+@@ -59,6 +82,9 @@ struct DynamicFileList
+ static DynamicFileList *file_list = NULL;
+ static DynamicFileList *file_tail = NULL;
+ 
++/* Head of linked list for runtime-registered static extensions */
++static StaticExtensionLib *registered_libraries = NULL;
++
+ /* stat() call under Win32 returns an st_ino field, but it has no meaning */
+ #ifndef WIN32
+ #define SAME_INODE(A,B) ((A).st_ino == (B).inode && (A).st_dev == (B).device)
+@@ -78,6 +104,126 @@ static void check_restricted_library_name(const char *name);
+ static const Pg_abi_values magic_data = PG_MODULE_ABI_DATA;
+ 
+ 
++/*
++ * Register a statically-linked extension library
++ *
++ * This function should be called during process initialization (e.g., via
++ * __attribute__((constructor)) or from an extension's init code) to register
++ * a library and its functions for static linking.
++ */
++void
++register_static_extension(const char *library,
++						  const Pg_magic_struct *magic,
++						  PG_init_t init_func,
++						  const StaticExtensionFunc *functions)
++{
++	StaticExtensionLib *lib;
++
++	lib = (StaticExtensionLib *) malloc(sizeof(StaticExtensionLib));
++	if (lib == NULL)
++		ereport(ERROR,
++				(errcode(ERRCODE_OUT_OF_MEMORY),
++				 errmsg("out of memory")));
++
++	lib->library = library;
++	lib->magic = magic;
++	lib->init_func = init_func;
++	lib->init_called = false;
++	lib->functions = functions;
++
++	lib->next = registered_libraries;
++	registered_libraries = lib;
++
++	elog(DEBUG1, "Registered static extension: %s", library);
++}
++
++/*
++ * Normalize library name for matching
++ * Strips "$libdir/", directory paths, and ".so" suffix
++ */
++static char *
++normalize_library_name(const char *name)
++{
++	char	   *result;
++	const char *basename;
++	char	   *dot;
++
++	if (strncmp(name, "$libdir/", 8) == 0)
++		name += 8;
++
++	basename = last_dir_separator(name);
++	if (basename)
++		basename++;
++	else
++		basename = name;
++
++	result = pstrdup(basename);
++
++	dot = strrchr(result, '.');
++	if (dot && (strcmp(dot, ".so") == 0 || strcmp(dot, ".dll") == 0 || strcmp(dot, ".dylib") == 0))
++		*dot = '\0';
++
++	return result;
++}
++
++/*
++ * Look up a registered static library by name
++ */
++static StaticExtensionLib *
++lookup_static_library(const char *filename)
++{
++	StaticExtensionLib *lib;
++	char	   *normalized_name;
++
++	normalized_name = normalize_library_name(filename);
++
++	for (lib = registered_libraries; lib != NULL; lib = lib->next)
++	{
++		if (strcmp(lib->library, normalized_name) == 0)
++		{
++			pfree(normalized_name);
++			return lib;
++		}
++	}
++
++	pfree(normalized_name);
++	return NULL;
++}
++
++/*
++ * Look up a function within a static library
++ */
++static const StaticExtensionFunc *
++lookup_function_in_library(StaticExtensionLib *lib, const char *funcname)
++{
++	const StaticExtensionFunc *func;
++
++	if (lib == NULL || lib->functions == NULL)
++		return NULL;
++
++	for (func = lib->functions; func->funcname != NULL; func++)
++	{
++		if (strcmp(func->funcname, funcname) == 0)
++			return func;
++	}
++
++	return NULL;
++}
++
++/*
++ * Call _PG_init for a static library if it exists and hasn't been called yet
++ */
++static void
++call_static_pg_init_once(StaticExtensionLib *lib)
++{
++	if (lib->init_func != NULL && !lib->init_called)
++	{
++		elog(DEBUG1, "Calling _PG_init for static library: %s", lib->library);
++		(*lib->init_func) ();
++		lib->init_called = true;
++	}
++}
++
+ /*
+  * Load the specified dynamic-link library file, and look for a function
+  * named funcname in it.
+@@ -95,46 +241,68 @@ void *
+ load_external_function(const char *filename, const char *funcname,
+ 					   bool signalNotFound, void **filehandle)
+ {
+-	char	   *fullname;
+-	void	   *lib_handle;
+-	void	   *retval;
++	StaticExtensionLib *lib;
++	const StaticExtensionFunc *func;
++	StaticLibHandle *handle;
+ 
+-	/*
+-	 * For extensions with hardcoded '$libdir/' library names, we strip the
+-	 * prefix to allow the library search path to be used. This is done only
+-	 * for simple names (e.g., "$libdir/foo"), not for nested paths (e.g.,
+-	 * "$libdir/foo/bar").
+-	 *
+-	 * For nested paths, 'expand_dynamic_library_name' directly expands the
+-	 * '$libdir' macro, so we leave them untouched.
+-	 */
+-	if (strncmp(filename, "$libdir/", 8) == 0)
++	/* Look up the library in registered static extensions */
++	lib = lookup_static_library(filename);
++
++	if (lib == NULL)
+ 	{
+-		if (first_dir_separator(filename + 8) == NULL)
+-			filename += 8;
++		ereport(ERROR,
++				(errcode(ERRCODE_UNDEFINED_FILE),
++				 errmsg("could not find library \"%s\" in registered static extensions",
++						filename),
++				 errhint("The library must be registered via register_static_extension() before use.")));
+ 	}
+ 
+-	/* Expand the possibly-abbreviated filename to an exact path name */
+-	fullname = expand_dynamic_library_name(filename);
++	/* Verify magic block compatibility */
++	if (lib->magic == NULL)
++	{
++		ereport(ERROR,
++				(errmsg("incompatible library \"%s\": missing magic block",
++						lib->library),
++				 errhint("Extension libraries are required to use the PG_MODULE_MAGIC macro.")));
++	}
+ 
+-	/* Load the shared library, unless we already did */
+-	lib_handle = internal_load_library(fullname);
++	if (lib->magic->len != sizeof(Pg_magic_struct) ||
++		memcmp(&lib->magic->abi_fields, &magic_data, sizeof(Pg_abi_values)) != 0)
++	{
++		incompatible_module_error(lib->library, &lib->magic->abi_fields);
++	}
+ 
+-	/* Return handle if caller wants it */
+-	if (filehandle)
+-		*filehandle = lib_handle;
++	/* Call _PG_init if it exists and hasn't been called yet */
++	call_static_pg_init_once(lib);
+ 
+-	/* Look up the function within the library. */
+-	retval = dlsym(lib_handle, funcname);
++	/* Look up the function within the library */
++	func = lookup_function_in_library(lib, funcname);
+ 
+-	if (retval == NULL && signalNotFound)
+-		ereport(ERROR,
+-				(errcode(ERRCODE_UNDEFINED_FUNCTION),
+-				 errmsg("could not find function \"%s\" in file \"%s\"",
+-						funcname, fullname)));
++	if (func == NULL)
++	{
++		if (signalNotFound)
++			ereport(ERROR,
++					(errcode(ERRCODE_UNDEFINED_FUNCTION),
++					 errmsg("could not find function \"%s\" in static library \"%s\"",
++							funcname, lib->library)));
++		return NULL;
++	}
+ 
+-	pfree(fullname);
+-	return retval;
++	/* Create and return handle if caller wants it */
++	if (filehandle)
++	{
++		handle = (StaticLibHandle *) malloc(sizeof(StaticLibHandle));
++		if (handle == NULL)
++			ereport(ERROR,
++					(errcode(ERRCODE_OUT_OF_MEMORY),
++					 errmsg("out of memory")));
++
++		handle->magic = STATIC_LIB_HANDLE_MAGIC;
++		handle->lib = lib;
++		*filehandle = (void *) handle;
++	}
++
++	return (void *) func->funcptr;
+ }
+ 
+ /*
+@@ -170,7 +338,43 @@ load_file(const char *filename, bool restricted)
+ void *
+ lookup_external_function(void *filehandle, const char *funcname)
+ {
+-	return dlsym(filehandle, funcname);
++	StaticLibHandle *handle;
++	const StaticExtensionFunc *func;
++	const char *actual_funcname;
++
++	if (filehandle == NULL)
++		return NULL;
++
++	handle = (StaticLibHandle *) filehandle;
++
++	if (handle->magic != STATIC_LIB_HANDLE_MAGIC)
++	{
++		elog(WARNING, "Invalid static library handle (bad magic number)");
++		return NULL;
++	}
++
++	/*
++	 * Check if this is a pg_finfo_* lookup.
++	 * If so, strip the prefix and return the finfo FUNCTION pointer.
++	 */
++	if (strncmp(funcname, "pg_finfo_", 9) == 0)
++	{
++		actual_funcname = funcname + 9;
++		func = lookup_function_in_library(handle->lib, actual_funcname);
++
++		if (func == NULL || func->finfofunc == NULL)
++			return NULL;
++
++		return (void *) func->finfofunc;
++	}
++
++	/* Normal function lookup */
++	func = lookup_function_in_library(handle->lib, funcname);
++
++	if (func == NULL)
++		return NULL;
++
++	return (void *) func->funcptr;
+ }
+ 
+ 
