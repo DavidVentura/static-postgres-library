@@ -132,12 +132,13 @@ pg_embedded_initdb(const char *data_dir, const char *username,
  */
 static int
 pg_embedded_init_internal(const char *data_dir, const char *dbname,
-						  const char *username, bool allow_system_table_mods)
+			  const char *username, bool allow_system_table_mods)
 {
 	if (pg_initialized)
 	{
 		snprintf(pg_error_msg, sizeof(pg_error_msg), "Already initialized");
-		return 0;				/* Already initialized, not an error */
+		return 0;
+		/* Already initialized, not an error */
 	}
 
 	if (!data_dir || !dbname || !username)
