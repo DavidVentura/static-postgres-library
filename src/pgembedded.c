@@ -201,6 +201,9 @@ pg_embedded_init_internal(const char *data_dir, const char *dbname,
 		SetConfigOption("full_page_writes", preinit_config.full_page_writes ? "on" : "off",
 						PGC_POSTMASTER, PGC_S_ARGV);
 
+		SetConfigOption("timezone_abbreviations", "Default",
+						PGC_POSTMASTER, PGC_S_ARGV);
+
 		/*
 		 * Enable system table modifications if requested (needed for initdb).
 		 * This must be set before SelectConfigFiles() is called.

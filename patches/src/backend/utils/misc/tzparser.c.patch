@@ -1,0 +1,15 @@
+diff --git a/src/backend/utils/misc/tzparser.c b/src/backend/utils/misc/tzparser.c
+index 6aaf7395ba8..de9d4ea6c6a 100644
+--- a/src/backend/utils/misc/tzparser.c
++++ b/src/backend/utils/misc/tzparser.c
+@@ -317,9 +317,7 @@ ParseTzFile(const char *filename, int depth,
+ 		return -1;
+ 	}
+ 
+-	get_share_path(my_exec_path, share_path);
+-	snprintf(file_path, sizeof(file_path), "%s/timezonesets/%s",
+-			 share_path, filename);
++	strlcpy(file_path, filename, sizeof(file_path));
+ 	tzFile = AllocateFile(file_path, "r");
+ 	if (!tzFile)
+ 	{
