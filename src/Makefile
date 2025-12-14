@@ -10,7 +10,7 @@ LDFLAGS = -Wl,--gc-sections
 PG_BACKEND_LIBS = ../vendor/pg18/src/backend/backend-libs.txt
 
 # Source files
-SRCS = pgembedded.c initdb_simple.c stubs.c pg_reset.c pg_notification.c
+SRCS = pgembedded.c initdb_simple.c stubs.c pg_reset.c pg_notification.c extensions.c
 OBJS = $(SRCS:.c=.o)
 
 OUTPUT = libpostgres.a

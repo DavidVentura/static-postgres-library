@@ -8,8 +8,8 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "utils/builtins.h"
+#include "extensions.h"
 
-/* Declare the magic block */
 PG_MODULE_MAGIC;
 
 /*
