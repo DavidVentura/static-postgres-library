@@ -14,7 +14,7 @@ ARCHIVE = libpgvector_static.a
 all: $(ARCHIVE)
 
 $(LIBVECTOR):
-	bash build-static.sh
+	CC=$(CC) CFLAGS="$(CFLAGS)" OUTPUT_LIB=$@ bash build-static.sh
 
 $(WRAPPER_SRC): $(LIBVECTOR)
 	python3 ../../helpers/gen_static_extension.py vector $(LIBVECTOR) ../../vendor/pgvector/vector.control ../../vendor/pgvector/sql/vector.sql 0.8.1 > $@
@@ -34,3 +34,5 @@ $(ARCHIVE): $(WRAPPER_OBJ) $(LIBVECTOR)
 clean:
 	rm -f $(WRAPPER_SRC) $(WRAPPER_OBJ) $(ARCHIVE)
 	rm -rf .tmp_objs
+	rm -f ../../vendor/pgvector/src/*.o
+	rm -f $(ARCHIVE)

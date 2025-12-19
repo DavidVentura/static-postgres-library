@@ -136,7 +136,7 @@ embedded_proj_db.o: embedded_proj_db.c proj_db.h
 	$(CC) -I"$(SQLITE_DIR)" $(CFLAGS) -c $< -o $@
 
 $(WRAPPER_OBJ): $(WRAPPER_SRC) proj_db.h embedded_proj_db.c
-	$(CC) $(CFLAGS) -I../../src -c $< -o $@
+	$(CC) $(CFLAGS) -I$(PG_INCLUDE) -I../../src -c $< -o $@
 
 $(ARCHIVE): $(WRAPPER_OBJ) embedded_proj_db.o
 	cp $(INPUT_A) $@

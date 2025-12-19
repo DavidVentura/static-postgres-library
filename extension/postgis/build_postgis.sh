@@ -1,6 +1,5 @@
 #!/bin/bash
 set -eu
-set -x
 
 VENDOR_DIR="$(realpath ../../vendor)"
 POSTGIS_DIR="$VENDOR_DIR/postgis"

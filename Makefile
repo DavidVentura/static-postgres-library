@@ -52,8 +52,10 @@ src: pg-backend-libs
 
 # Clean everything
 clean:
-	$(MAKE) -C vendor/pg18 clean || true
-	$(MAKE) -C src clean || true
-	$(MAKE) -C examples clean || true
+	cd vendor/pg18 && git clean -fdx
+	#$(MAKE) -C vendor/pg18 clean
+	$(MAKE) -C src clean
+	$(MAKE) -C examples clean
+	$(MAKE) -C extension clean
 	rm -f vendor/pg18/src/Makefile.global
 	rm -f ./vendor/pg18/src/backend/backend-libs.txt

@@ -10,13 +10,9 @@ ARCHIVE = example.a
 .PHONY: all clean
 
 $(ARCHIVE): $(WRAPPER_OBJ) $(OBJ)
-	mkdir -p .tmp_objs
-	cp $(OBJ) .tmp_objs
-	for obj in .tmp_objs/*.o; do \
-		objcopy --localize-symbol=Pg_magic_func \
-		        --redefine-sym=_PG_init=example_PG_init $$obj; \
-	done
-	$(AR) rcs $@ $(WRAPPER_OBJ) .tmp_objs/*.o
+	objcopy --localize-symbol=Pg_magic_func \
+		--redefine-sym=_PG_init=example_PG_init $(OBJ)
+	$(AR) rcs $@ $(WRAPPER_OBJ) $(OBJ)
 
 $(WRAPPER_OBJ): $(WRAPPER_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@
