@@ -1,6 +1,6 @@
 include ../../common.mk
 
-CFLAGS += -I"../../src" -fPIC
+CFLAGS += -I"../../src" -I$(PG_INCLUDE) -fPIC
 
 PLPGSQL_DIR = ../../vendor/pg18/src/pl/plpgsql
 PLPGSQL_SRC_DIR = $(PLPGSQL_DIR)/src

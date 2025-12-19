@@ -2,8 +2,17 @@
 # Include this in each Makefile with: include ../common.mk
 
 CC = musl-gcc
+CXX = musl-gcc
 AR = ar
-CFLAGS = -static -I$(PG_INCLUDE) -O0 -ggdb -fdata-sections -ffunction-sections -Werror=implicit-function-declaration
+OPTLEVEL = -O0 -ggdb
+
+CC  = $$HOME/Downloads/x86_64-linux-musl-native/bin/x86_64-linux-musl-gcc
+CXX = $$HOME/Downloads/x86_64-linux-musl-native/bin/x86_64-linux-musl-g++
+AR = ar
+OPTLEVEL = -O2
+
+CFLAGS =   -static $(OPTLEVEL) -fdata-sections -ffunction-sections -Werror=implicit-function-declaration
+CXXFLAGS = -static $(OPTLEVEL) -fdata-sections -ffunction-sections -Werror=implicit-function-declaration
 LDFLAGS = -Wl,--gc-sections
 
 # PostgreSQL paths

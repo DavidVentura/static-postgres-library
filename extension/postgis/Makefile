@@ -33,7 +33,6 @@ all: $(ARCHIVE)
 
 # SQLite build target
 $(SQLITE_LIB):
-	@echo "Building SQLite3..."
 	cd $(SQLITE_DIR) && \
 	$(CC) -O2 -fPIC -DSQLITE_OMIT_LOAD_EXTENSION -c sqlite3.c -o sqlite3.o && \
 	ar rcs libsqlite3.a sqlite3.o
@@ -79,7 +78,7 @@ $(PROJ_LIB): $(SQLITE_LIB)
 	      .. && \
 	$(MAKE)
 
-# PostGIS configure target - generate minimal config
+#$(POSTGIS_CONFIG): $(GEOS_LIB) $(PROJ_LIB) $(LIBXML2_LIB)
 $(POSTGIS_CONFIG): $(GEOS_LIB) $(PROJ_LIB) $(LIBXML2_LIB)
 	@echo "Generating PostGIS config..."
 	echo '#define HAVE_GEOS 1' > $@
@@ -112,7 +111,7 @@ $(POSTGIS_LIB): $(POSTGIS_CONFIG) $(LIBLWGEOM_H)
 	CFLAGS='$(CFLAGS)' CC="$(CC)" CXX="$(CXX)" ./build_postgis.sh
 
 # Merge all libraries into INPUT_A
-$(INPUT_A): $(POSTGIS_LIB)
+$(INPUT_A): $(POSTGIS_LIB) $(GEOS_C_LIB) $(GEOS_LIB) $(PROJ_LIB) $(SQLITE_LIB) $(LIBXML2_LIB)
 	@echo "Merging all dependencies into $@..."
 	printf '%s\n' \
 		'CREATE $@' \
@@ -151,7 +150,7 @@ clean:
 
 clean-deps:
 	rm -rf $(SQLITE_DIR)/*.o $(SQLITE_DIR)/*.a
-	cd $(LIBXML2_DIR) && git clean -fd
-	cd $(GEOS_DIR) && git clean -fd
-	cd $(PROJ_DIR) && git clean -fd
-	cd $(POSTGIS_DIR) && git clean -fd
+	cd $(LIBXML2_DIR) && git clean -fdx && rm -rf $(LIBXML2_DIR)/*.o
+	cd $(GEOS_DIR) && git clean -fdx && rm -rf build
+	cd $(PROJ_DIR) && git clean -fdx && rm -rf build
+	cd $(POSTGIS_DIR) && git clean -fdx && rm -rf build

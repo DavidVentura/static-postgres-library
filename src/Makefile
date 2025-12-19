@@ -22,7 +22,7 @@ embedded_timezone_data.h: $(TZ_DEFAULT_FILE)
 
 # Compile C files to object files
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(PG_INCLUDE) -c $< -o $@
 
 # Build final static library using MRI script
 $(OUTPUT): $(OBJS) 

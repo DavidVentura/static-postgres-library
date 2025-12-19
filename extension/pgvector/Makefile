@@ -1,6 +1,6 @@
 include ../../common.mk
 
-CFLAGS += -I"../../src" -fPIC
+CFLAGS += -I"../../src" -I$(PG_INCLUDE) -fPIC
 
 LIBVECTOR = ../../vendor/pgvector/libvector.a
 

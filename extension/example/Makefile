@@ -1,6 +1,6 @@
 include ../../common.mk
 
-CFLAGS += -I"../../src" -fPIC
+CFLAGS += -I"../../src" -I$(PG_INCLUDE) -fPIC
 
 WRAPPER_SRC = example_static.c
 WRAPPER_OBJ = example_static.o
