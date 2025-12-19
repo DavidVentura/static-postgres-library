@@ -5,6 +5,16 @@ import subprocess
 import re
 import os
 
+def xxd(fname, varname) -> str:
+    p = subprocess.Popen(
+        ['xxd', '-include', '-name', varname],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    )
+    stdout, _ = p.communicate(open(fname, 'rb').read())
+    out = stdout.decode('utf-8').replace("unsigned", "const unsigned")
+    return out
+
 def generate_data_h(lib_name, control_file, script_file, output_file):
     """Generate data.h with embedded file data using xxd"""
     with open(output_file, 'w') as f:
@@ -14,24 +24,12 @@ def generate_data_h(lib_name, control_file, script_file, output_file):
         f.write(f" */\n\n")
 
         if control_file and os.path.exists(control_file):
-            result = subprocess.run(
-                ['xxd', '-include', '-name', f'{lib_name}_control'],
-                stdin=open(control_file, 'rb'),
-                capture_output=True,
-                text=True
-            )
-            out = result.stdout.replace("unsigned", "const unsigned")
+            out = xxd(control_file, f'{lib_name}_control')
             f.write(out)
             f.write('\n')
 
         if script_file and os.path.exists(script_file):
-            result = subprocess.run(
-                ['xxd', '-include', '-name', f'{lib_name}_script'],
-                stdin=open(script_file, 'rb'),
-                capture_output=True,
-                text=True
-            )
-            out = result.stdout.replace("unsigned", "const unsigned")
+            out = xxd(script_file, f'{lib_name}_script')
             f.write(out)
             f.write('\n')
 
@@ -40,6 +38,8 @@ def main():
     object_file = sys.argv[2]
     control_file = sys.argv[3] if len(sys.argv) > 3 else None
     script_file = sys.argv[4] if len(sys.argv) > 4 else None
+    # TODO: parse from control_file
+    version = sys.argv[5] if len(sys.argv) > 5 else None
 
     result = subprocess.run(['nm', object_file], capture_output=True, text=True)
     nm_output = result.stdout
@@ -106,14 +106,14 @@ def main():
     if has_embedded_files:
         if control_file:
             print(f"\tstatic const EmbeddedFile control_file = {{")
-            print(f'\t\t.filename = "share/extension/{lib_name}.control",')
+            print(f'\t\t.filename = "/tmp/pg-embedded-install/share/postgresql/extension/{lib_name}.control",')
             print(f"\t\t.data = {lib_name}_control,")
             print(f"\t\t.len = {lib_name}_control_len")
             print("\t};")
 
         if script_file:
             print(f"\tstatic const EmbeddedFile script_file = {{")
-            print(f'\t\t.filename = "share/extension/{lib_name}.sql",')
+            print(f'\t\t.filename = "/tmp/pg-embedded-install/share/postgresql/extension/{lib_name}--{version}.sql",')
             print(f"\t\t.data = {lib_name}_script,")
             print(f"\t\t.len = {lib_name}_script_len")
             print("\t};")

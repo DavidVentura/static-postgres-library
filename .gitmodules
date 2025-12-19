@@ -6,3 +6,23 @@
 [submodule "vendor/pgvector"]
 	path = vendor/pgvector
 	url = https://github.com/pgvector/pgvector.git
+[submodule "vendor/geos"]
+	path = vendor/geos
+	url = https://github.com/libgeos/geos.git
+	branch = 3.12.2
+	shallow = true
+[submodule "vendor/proj"]
+	path = vendor/proj
+	url = https://github.com/OSGeo/PROJ.git
+	branch = 9.5.1
+	shallow = true
+[submodule "vendor/libxml2"]
+	path = vendor/libxml2
+	url = https://github.com/GNOME/libxml2.git
+	branch = v2.13.5
+	shallow = true
+[submodule "vendor/postgis"]
+	path = vendor/postgis
+	url = https://github.com/postgis/postgis.git
+	branch = 3.6.1
+	shallow = true

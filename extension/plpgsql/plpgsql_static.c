@@ -38,12 +38,12 @@ void
 register_plpgsql(void)
 {
 	static const EmbeddedFile control_file = {
-		.filename = "share/extension/plpgsql.control",
+		.filename = "/tmp/pg-embedded-install/share/postgresql/extension/plpgsql.control",
 		.data = plpgsql_control,
 		.len = plpgsql_control_len
 	};
 	static const EmbeddedFile script_file = {
-		.filename = "share/extension/plpgsql.sql",
+		.filename = "/tmp/pg-embedded-install/share/postgresql/extension/plpgsql--1.0.sql",
 		.data = plpgsql_script,
 		.len = plpgsql_script_len
 	};

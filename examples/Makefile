@@ -1,13 +1,22 @@
 include ../common.mk
 
-CFLAGS += -I"../src"
+CFLAGS += -I"../src" 
 LIBPOSTGRES = ../src/libpostgres.a
-EXTENSIONS_DIR = ../extension
+CC = ~/Downloads/x86_64-linux-musl-native/bin/x86_64-linux-musl-gcc
+#LDFLAGS += -lstdc++
 
 EXAMPLES = example initdb reopen test_create_extension
-EXTENSION_OBJS = $(EXTENSIONS_DIR)/example_static.o
+EXTENSIONS_DIR = ../extension
+EXTENSION_OBJS = $(EXTENSIONS_DIR)/example/example.a
 EXTENSION_OBJS += $(EXTENSIONS_DIR)/plpgsql/libplpgsql_static.a
 EXTENSION_OBJS += $(EXTENSIONS_DIR)/pgvector/libpgvector_static.a
+EXTENSION_OBJS += $(EXTENSIONS_DIR)/postgis/libpostgis_static.a
+#EXTENSION_OBJS += $(EXTENSIONS_DIR)/postgis/libpostgis_all.a
+#EXTENSION_OBJS += ~/git/postgis/postgis-3.6.2dev/vendor/geos/build/lib/libgeos_c.a
+#EXTENSION_OBJS += ~/git/postgis/postgis-3.6.2dev/vendor/geos/build/lib/libgeos.a
+#EXTENSION_OBJS += ~/git/postgis/postgis-3.6.2dev/vendor/proj/build/lib/libproj.a
+#EXTENSION_OBJS += ~/git/postgis/postgis-3.6.2dev/vendor/sqlite/libsqlite3.a
+#EXTENSION_OBJS += ~/git/postgis/postgis-3.6.2dev/vendor/libxml2/.libs/libxml2.a
 
 .PHONY: all clean extensions
 
@@ -15,7 +24,7 @@ all: $(EXAMPLES)
 
 # Build extensions first
 extensions:
-	$(MAKE) -C $(EXTENSIONS_DIR)
+	$(MAKE) -C .. extensions
 
 # Pattern rule for simple examples
 example initdb reopen: %: %.c $(LIBPOSTGRES) | extensions

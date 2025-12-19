@@ -17,7 +17,7 @@ $(LIBVECTOR):
 	bash build-static.sh
 
 $(WRAPPER_SRC): $(LIBVECTOR)
-	python3 ../../helpers/gen_static_extension.py pgvector $(LIBVECTOR) ../../vendor/pgvector/vector.control ../../vendor/pgvector/sql/vector.sql > $@
+	python3 ../../helpers/gen_static_extension.py vector $(LIBVECTOR) ../../vendor/pgvector/vector.control ../../vendor/pgvector/sql/vector.sql 0.8.1 > $@
 
 $(WRAPPER_OBJ): $(WRAPPER_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -27,11 +27,10 @@ $(ARCHIVE): $(WRAPPER_OBJ) $(LIBVECTOR)
 	cd .tmp_objs && $(AR) x ../$(LIBVECTOR)
 	for obj in .tmp_objs/*.o; do \
 		objcopy --localize-symbol=Pg_magic_func \
-		        --redefine-sym=_PG_init=pgvector_PG_init $$obj; \
+		        --redefine-sym=_PG_init=vector_PG_init $$obj; \
 	done
 	$(AR) rcs $@ $(WRAPPER_OBJ) .tmp_objs/*.o
 
 clean:
 	rm -f $(WRAPPER_SRC) $(WRAPPER_OBJ) $(ARCHIVE)
 	rm -rf .tmp_objs
-	rm -f extension/*

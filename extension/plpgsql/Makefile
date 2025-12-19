@@ -24,7 +24,7 @@ $(PLPGSQL_SRC_DIR)/pl_handler.o:
 	$(MAKE) -C $(PLPGSQL_DIR)
 
 $(WRAPPER_SRC): $(PLPGSQL_SRC_DIR)/pl_handler.o
-	python3 ../../helpers/gen_static_extension.py plpgsql $(PLPGSQL_SRC_DIR)/pl_handler.o $(PLPGSQL_SRC_DIR)/plpgsql.control $(PLPGSQL_SRC_DIR)/plpgsql--1.0.sql > $@
+	python3 ../../helpers/gen_static_extension.py plpgsql $(PLPGSQL_SRC_DIR)/pl_handler.o $(PLPGSQL_SRC_DIR)/plpgsql.control $(PLPGSQL_SRC_DIR)/plpgsql--1.0.sql 1.0 > $@
 
 $(WRAPPER_OBJ): $(WRAPPER_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@

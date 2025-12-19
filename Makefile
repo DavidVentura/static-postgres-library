@@ -11,8 +11,6 @@ build: src
 
 extensions: pg-backend-libs
 	$(MAKE) -C extension
-	$(MAKE) -C extension/pgvector
-	$(MAKE) -C extension/plpgsql
 
 # Build examples (depends on src being built)
 examples: src extensions

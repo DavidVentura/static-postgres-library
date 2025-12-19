@@ -1,17 +1,16 @@
-include ../common.mk
+.PHONY: build clean example pgvector plpgsql
 
-CFLAGS += -I"../src" -fPIC
+build: example pgvector plpgsql
+	:
 
-EXTENSIONS = example_static.o
-
-.PHONY: all clean
-
-all: $(EXTENSIONS)
-
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-	objcopy --redefine-sym=Pg_magic_func=example_static_Pg_magic_func \
-	        --redefine-sym=_PG_init=example_static_PG_init $@
+example:
+	$(MAKE) -C example
+pgvector:
+	$(MAKE) -C pgvector
+plpgsql:
+	$(MAKE) -C plpgsql
 
 clean:
-	rm -f $(EXTENSIONS)
+	$(MAKE) -C example clean
+	$(MAKE) -C pgvector clean
+	$(MAKE) -C plpgsql clean

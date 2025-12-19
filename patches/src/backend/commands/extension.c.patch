@@ -1,0 +1,61 @@
+diff --git a/src/backend/commands/extension.c b/src/backend/commands/extension.c
+index 93ef1ad106f..bf36b2f3b3b 100644
+--- a/src/backend/commands/extension.c
++++ b/src/backend/commands/extension.c
+@@ -69,6 +69,9 @@
+ #include "utils/syscache.h"
+ #include "utils/varlena.h"
+ 
++extern FILE *embedded_AllocateFile(const char *path, const char *mode);
++extern bool has_embedded_file(const char *path);
++extern char *get_embedded_file_data(const char *path, int *length);
+ 
+ /* GUC */
+ char	   *Extension_control_path;
+@@ -552,7 +555,7 @@ parse_extension_control_file(ExtensionControlFile *control,
+ 								control->control_dir,
+ 								strlen(control->control_dir) - strlen("/extension"));
+ 
+-	if ((file = AllocateFile(filename, "r")) == NULL)
++	if ((file = embedded_AllocateFile(filename, "r")) == NULL)
+ 	{
+ 		/* no complaint for missing auxiliary file */
+ 		if (errno == ENOENT && version)
+@@ -747,7 +750,9 @@ read_extension_script_file(const ExtensionControlFile *control,
+ 	char	   *dest_str;
+ 	int			len;
+ 
+-	src_str = read_whole_file(filename, &len);
++	src_str = get_embedded_file_data(filename, &len);
++	if (!src_str)
++		src_str = read_whole_file(filename, &len);
+ 
+ 	/* use database encoding if not given */
+ 	if (control->encoding < 0)
+@@ -1701,7 +1706,7 @@ CreateExtensionInternal(char *extensionName,
+ 	 * will get us there.
+ 	 */
+ 	filename = get_extension_script_filename(pcontrol, NULL, versionName);
+-	if (stat(filename, &fst) == 0)
++	if (has_embedded_file(filename) || stat(filename, &fst) == 0)
+ 	{
+ 		/* Easy, no extra scripts */
+ 		updateVersions = NIL;
+@@ -3825,7 +3830,7 @@ read_whole_file(const char *filename, int *length)
+ 				 errmsg("file \"%s\" is too large", filename)));
+ 	bytes_to_read = (size_t) fst.st_size;
+ 
+-	if ((file = AllocateFile(filename, PG_BINARY_R)) == NULL)
++	if ((file = embedded_AllocateFile(filename, PG_BINARY_R)) == NULL)
+ 		ereport(ERROR,
+ 				(errcode_for_file_access(),
+ 				 errmsg("could not open file \"%s\" for reading: %m",
+@@ -3919,7 +3924,7 @@ find_in_paths(const char *basename, List *paths)
+ 
+ 		full = psprintf("%s/%s", path, basename);
+ 
+-		if (pg_file_exists(full))
++		if (has_embedded_file(full) || pg_file_exists(full))
+ 			return full;
+ 
+ 		pfree(path);

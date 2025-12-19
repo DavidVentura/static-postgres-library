@@ -1,4 +1,0 @@
-# example_static extension control file
-comment = 'Example statically-linked extension'
-default_version = '1.0'
-relocatable = true

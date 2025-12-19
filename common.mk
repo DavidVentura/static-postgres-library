@@ -3,7 +3,7 @@
 
 CC = musl-gcc
 AR = ar
-CFLAGS = -static -I"$(PG_INCLUDE)" -O0 -ggdb -fdata-sections -ffunction-sections -Werror=implicit-function-declaration
+CFLAGS = -static -I$(PG_INCLUDE) -O0 -ggdb -fdata-sections -ffunction-sections -Werror=implicit-function-declaration
 LDFLAGS = -Wl,--gc-sections
 
 # PostgreSQL paths
