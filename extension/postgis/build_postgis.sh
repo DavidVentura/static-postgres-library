@@ -58,7 +58,7 @@ done
 for src in $POSTGIS_DIR/deps/flatgeobuf/*.cpp; do
     [ -f "$src" ] || continue
     basename=$(basename "$src")
-    $CXX $CFLAGS $INCLUDES -c "$src" -o "flatgeobuf_$(basename "$src" .cpp).o"
+    $CXX $CXXFLAGS $INCLUDES -c "$src" -o "flatgeobuf_$(basename "$src" .cpp).o"
 done
 
 echo "Creating static library $OUTPUT..."

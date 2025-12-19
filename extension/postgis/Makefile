@@ -41,6 +41,7 @@ $(SQLITE_LIB):
 $(LIBXML2_LIB):
 	@echo "Building libxml2..."
 	cd $(LIBXML2_DIR) && \
+	CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	./autogen.sh --prefix=/usr --disable-shared --enable-static --with-pic --without-python --without-lzma --without-zlib && \
 	$(MAKE) libxml2.la
 
@@ -69,6 +70,8 @@ $(PROJ_LIB): $(SQLITE_LIB)
 	cmake -DCMAKE_BUILD_TYPE=Release \
 	      -DBUILD_SHARED_LIBS=OFF \
 	      -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+	      -DCMAKE_C_COMPILER=$(CC) \
+	      -DCMAKE_CXX_COMPILER=$(CXX) \
 	      -DENABLE_TIFF=OFF \
 	      -DENABLE_CURL=OFF \
 	      -DBUILD_TESTING=OFF \
@@ -108,7 +111,7 @@ $(LIBLWGEOM_H): $(POSTGIS_DIR)/liblwgeom/liblwgeom.h.in
 
 # PostGIS build target (depends on all dependencies)
 $(POSTGIS_LIB): $(POSTGIS_CONFIG) $(LIBLWGEOM_H)
-	CFLAGS='$(CFLAGS)' CC="$(CC)" CXX="$(CXX)" ./build_postgis.sh
+	CFLAGS='$(CFLAGS)' CXXFLAGS='$(CXXFLAGS)' CC="$(CC)" CXX="$(CXX)" ./build_postgis.sh
 
 # Merge all libraries into INPUT_A
 $(INPUT_A): $(POSTGIS_LIB) $(GEOS_C_LIB) $(GEOS_LIB) $(PROJ_LIB) $(SQLITE_LIB) $(LIBXML2_LIB)

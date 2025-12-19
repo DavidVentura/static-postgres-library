@@ -35,4 +35,5 @@ clean:
 	rm -f $(WRAPPER_SRC) $(WRAPPER_OBJ) $(ARCHIVE)
 	rm -rf .tmp_objs
 	rm -f ../../vendor/pgvector/src/*.o
+	rm -f $(LIBVECTOR)
 	rm -f $(ARCHIVE)

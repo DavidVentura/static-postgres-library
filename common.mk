@@ -12,7 +12,7 @@ AR = ar
 OPTLEVEL = -O2
 
 CFLAGS =   -static $(OPTLEVEL) -fdata-sections -ffunction-sections -Werror=implicit-function-declaration
-CXXFLAGS = -static $(OPTLEVEL) -fdata-sections -ffunction-sections -Werror=implicit-function-declaration
+CXXFLAGS = -static $(OPTLEVEL) -fdata-sections -ffunction-sections
 LDFLAGS = -Wl,--gc-sections
 
 # PostgreSQL paths

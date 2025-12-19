@@ -3,7 +3,7 @@
 include ./common.mk
 
 # Default target builds everything
-all: build examples
+all: build
 
 patch:
 	cd vendor/pg18 && find ../../patches/pg18 -type f -name '*.patch' | while read -r line; do patch -p1 < $$line; done
