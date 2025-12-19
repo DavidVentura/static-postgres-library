@@ -1,0 +1,38 @@
+diff --git a/src/iso19111/factory.cpp b/src/iso19111/factory.cpp
+index 822d0cc6..bd4cd688 100644
+--- a/src/iso19111/factory.cpp
++++ b/src/iso19111/factory.cpp
+@@ -1191,6 +1191,7 @@ void DatabaseContext::Private::cache(const std::string &code,
+ 
+ // ---------------------------------------------------------------------------
+ 
++extern "C" sqlite3* get_embedded_proj_db(void);
+ void DatabaseContext::Private::open(const std::string &databasePath,
+                                     PJ_CONTEXT *ctx) {
+     if (!ctx) {
+@@ -1198,20 +1199,13 @@ void DatabaseContext::Private::open(const std::string &databasePath,
+     }
+ 
+     setPjCtxt(ctx);
+-    std::string path(databasePath);
+-    if (path.empty()) {
+-        path.resize(2048);
+-        const bool found =
+-            pj_find_file(pjCtxt(), "proj.db", &path[0], path.size() - 1) != 0;
+-        path.resize(strlen(path.c_str()));
+-        if (!found) {
+-            throw FactoryException("Cannot find proj.db");
+-        }
++    sqlite3 *embedded_db = get_embedded_proj_db();
++    if (!embedded_db) {
++        throw FactoryException("Cannot load embedded proj.db");
+     }
+ 
+-    sqlite_handle_ = SQLiteHandleCache::get().getHandle(path, ctx);
+-
+-    databasePath_ = std::move(path);
++    sqlite_handle_ = SQLiteHandle::initFromExisting(embedded_db, false, 0, 0);
++    databasePath_ = ":memory:";
+ }
+ 
+ // ---------------------------------------------------------------------------

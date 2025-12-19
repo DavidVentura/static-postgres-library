@@ -4,7 +4,8 @@
 all: build examples
 
 patch:
-	cd vendor/pg18 && find ../../patches -type f -name '*.patch' | while read -r line; do patch -p1 < $$line; done
+	cd vendor/pg18 && find ../../patches/pg18 -type f -name '*.patch' | while read -r line; do patch -p1 < $$line; done
+	cd vendor/proj && find ../../patches/proj -type f -name '*.patch' | while read -r line; do patch -p1 < $$line; done
 
 # Build the base PostgreSQL components and our library
 build: src
